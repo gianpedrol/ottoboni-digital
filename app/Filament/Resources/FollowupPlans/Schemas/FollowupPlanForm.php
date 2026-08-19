@@ -76,6 +76,7 @@ class FollowupPlanForm
                     ->schema([
                         Repeater::make('steps')
                             ->relationship('steps')
+                            ->label('Passos')
                             ->hiddenLabel()
                             ->orderColumn('ordem')
                             ->reorderable()

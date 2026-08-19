@@ -10,7 +10,28 @@ disparar follow-ups para os leads.
   interna; as regras dos números dos relatórios estão em
   [docs/metricas.md](docs/metricas.md).
 
-## Estado atual — Fase 1 (leitura) pronta
+## Estado atual — Fases 1 e 2 prontas
+
+### Fase 2 — motor de follow-up
+
+- **Réguas** com passos ilimitados (offset em horas, canal, texto fixo ou
+  IA com prompt), gatilhos por etapa, temperatura, sem-resposta ou manual.
+- **Simulador obrigatório**: renderiza a régua inteira para um lead real
+  (datas + textos) sem enviar nada.
+- **Agendamento**: `followup:agendar` (varredura horária das réguas
+  ativas, idempotente) e `followup:dispatch` (a cada 5 min, enfileira os
+  runs vencidos dentro da janela de horário).
+- **Execução**: texto fixo via tarefa/Salesbot vai direto na API do Kommo
+  (o caminho seguro); IA, Instagram e canal automático vão para o n8n com
+  HMAC (contrato em [docs/n8n-followup-executor.md](docs/n8n-followup-executor.md)).
+- **Cancelamento automático** verificado imediatamente antes do envio:
+  lead ganhou/perdeu, saiu da etapa do gatilho, ou tem tarefa humana
+  aberta. Limites: 1 follow-up/lead a cada 24h, 5 por lead no total.
+- **Callback** idempotente por `run_id`, 401 sem assinatura válida.
+- Telas: Réguas, Simulador, Execuções (com escopo por médico) e ação
+  "Follow-up" por linha em Atendimentos.
+
+### Fase 1 — leitura
 
 - `KommoClient` com throttle central (5 req/s), retry com backoff em
   429/5xx, bloqueio total em 403 e log de todas as chamadas.

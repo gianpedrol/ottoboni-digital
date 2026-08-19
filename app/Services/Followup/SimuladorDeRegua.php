@@ -36,6 +36,11 @@ class SimuladorDeRegua
         foreach ($plan->steps()->where('ativo', true)->get() as $step) {
             $previsto = JanelaDeEnvio::proxima($gatilhoEm->addHours($step->offset_horas));
 
+            $observacoes = array_filter([
+                $this->observacao($step->canal, $lead),
+                $this->avisoDePlaceholders($step->modo, (string) $step->texto, $lead),
+            ]);
+
             $passos[] = [
                 'ordem' => $step->ordem,
                 'offset_horas' => $step->offset_horas,
@@ -45,7 +50,7 @@ class SimuladorDeRegua
                 'texto' => $step->modo === FollowupModo::Ia
                     ? '[gerado pela IA na hora do envio, ancorado no lead] Prompt: ' . $step->prompt_ia
                     : TextoRenderer::render((string) $step->texto, $lead),
-                'observacao' => $this->observacao($step->canal, $lead),
+                'observacao' => $observacoes === [] ? null : implode(' ', $observacoes),
             ];
         }
 
@@ -60,6 +65,22 @@ class SimuladorDeRegua
             ],
             'passos' => $passos,
         ];
+    }
+
+    private function avisoDePlaceholders(FollowupModo $modo, string $texto, LeadData $lead): ?string
+    {
+        if ($modo === FollowupModo::Ia) {
+            return null;
+        }
+
+        $vazios = TextoRenderer::placeholdersSemValor($texto, $lead);
+
+        if ($vazios === []) {
+            return null;
+        }
+
+        return 'Este lead não tem ' . implode(', ', $vazios)
+            . ' preenchido — a frase pode ficar manca. Revise o texto ou o cadastro do lead.';
     }
 
     private function observacao(FollowupCanal $canal, LeadData $lead): ?string
