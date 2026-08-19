@@ -159,10 +159,16 @@ class KommoClient
 
     /**
      * Segura a chamada até haver vaga na janela de 1 segundo.
+     * Com rate <= 0 o throttle é desligado — usado nos testes, onde o
+     * relógio congelado impediria o limitador de expirar.
      */
     private function waitForSlot(): void
     {
         $perSecond = (int) config('kommo.rate_per_second');
+
+        if ($perSecond <= 0) {
+            return;
+        }
 
         while (RateLimiter::tooManyAttempts(self::THROTTLE_KEY, $perSecond)) {
             usleep(100_000);

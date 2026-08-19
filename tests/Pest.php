@@ -110,3 +110,57 @@ function kommoFixture(string $name): array
 
     return json_decode($json, associative: true);
 }
+
+/*
+|--------------------------------------------------------------------------
+| Helpers do motor de follow-up (Fase 2)
+|--------------------------------------------------------------------------
+*/
+
+function criarMedicoDuda(): App\Models\Doctor
+{
+    return App\Models\Doctor::query()->firstOrCreate(
+        ['agente' => 'duda'],
+        [
+            'nome' => 'Dr. Eduardo Ottoboni',
+            'kommo_pipeline_id' => config('kommo.pipelines.duda'),
+            'ativo' => true,
+        ],
+    );
+}
+
+/**
+ * Régua ativa com N passos de texto fixo via tarefa no Kommo (o caminho
+ * seguro da Fase 2), gatilho de etapa 51001.
+ *
+ * @param  array<string, mixed>  $overridesPlan
+ * @param  array<string, mixed>  $overridesStep
+ */
+function criarRegua(int $passos = 3, array $overridesPlan = [], array $overridesStep = []): App\Models\FollowupPlan
+{
+    $doctor = criarMedicoDuda();
+
+    $plan = App\Models\FollowupPlan::query()->create([
+        'doctor_id' => $doctor->id,
+        'nome' => 'Régua de teste',
+        'ativo' => true,
+        'gatilho' => App\Enums\FollowupGatilho::Etapa,
+        'gatilho_config' => ['status_id' => 51001],
+        ...$overridesPlan,
+    ]);
+
+    foreach (range(1, $passos) as $i) {
+        App\Models\FollowupStep::query()->create([
+            'plan_id' => $plan->id,
+            'ordem' => $i,
+            'offset_horas' => $i * 24,
+            'canal' => 'kommo_task',
+            'modo' => 'texto_fixo',
+            'texto' => "Passo {$i}: oi {nome}, tudo bem?",
+            'ativo' => true,
+            ...$overridesStep,
+        ]);
+    }
+
+    return $plan;
+}
