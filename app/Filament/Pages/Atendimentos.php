@@ -116,7 +116,9 @@ class Atendimentos extends Page implements HasTable
                 IconColumn::make('gerado_pela_agente')
                     ->label('IA')
                     ->boolean()
-                    ->tooltip('Lead gerado pela agente de IA'),
+                    ->tooltip(fn (array $record): string => $record['gerado_pela_agente']
+                        ? 'Lead gerado pela agente de IA'
+                        : 'Lead cadastrado à mão pela equipe'),
                 TextColumn::make('created_at')
                     ->label('Criado em')
                     ->dateTime('d/m/Y H:i', timezone: config('painel.timezone'))
