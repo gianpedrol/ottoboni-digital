@@ -1,8 +1,6 @@
 <?php
 
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
+// Retenção de logs (LGPD): kommo_api_calls e webhook_logs limpos após 90 dias.
+Schedule::command('painel:limpar-logs')->dailyAt('03:00');
