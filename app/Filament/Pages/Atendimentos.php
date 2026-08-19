@@ -193,6 +193,25 @@ class Atendimentos extends Page implements HasTable
                     ->label('Ficha')
                     ->icon(Heroicon::OutlinedIdentification)
                     ->url(fn (array $record): string => FichaAtendimento::getUrl(['leadId' => $record['id']])),
+                Action::make('agendarFollowup')
+                    ->label('Follow-up')
+                    ->icon(Heroicon::OutlinedArrowPathRoundedSquare)
+                    ->visible(fn (): bool => $this->podeExportar())
+                    ->schema([
+                        Select::make('plan_id')
+                            ->label('Régua')
+                            ->options(function (array $record): array {
+                                return \App\Models\FollowupPlan::query()
+                                    ->whereHas('doctor', fn ($q) => $q->where('kommo_pipeline_id', $record['pipeline_id']))
+                                    ->pluck('nome', 'id')
+                                    ->toArray();
+                            })
+                            ->required()
+                            ->helperText('Agenda todos os passos ativos desta régua para o lead, a partir de agora.'),
+                    ])
+                    ->action(function (array $record, array $data): void {
+                        $this->agendarFollowupManual((int) $record['id'], (int) $data['plan_id']);
+                    }),
                 Action::make('kommo')
                     ->label('Abrir no Kommo')
                     ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
@@ -393,6 +412,47 @@ class Atendimentos extends Page implements HasTable
         $user = $this->usuario();
 
         return $user->isAdmin() || $user->isGestor();
+    }
+
+    private function agendarFollowupManual(int $leadId, int $planId): void
+    {
+        $plan = \App\Models\FollowupPlan::query()->findOrFail($planId);
+
+        try {
+            $lead = app(LeadRepository::class)->find($leadId);
+        } catch (KommoException $e) {
+            Notification::make()->danger()->title('Falha ao consultar o Kommo')->body($e->getMessage())->send();
+
+            return;
+        }
+
+        if ($lead === null) {
+            Notification::make()->danger()->title('Lead não encontrado no Kommo')->send();
+
+            return;
+        }
+
+        $novos = app(\App\Services\Followup\AgendadorDeFollowups::class)->agendarParaLead($plan, $lead);
+
+        AuditLog::registrar('agendou_followup_manual', [
+            'lead_id' => $leadId,
+            'plan_id' => $planId,
+            'runs' => $novos,
+        ]);
+
+        if ($novos > 0) {
+            Notification::make()
+                ->success()
+                ->title("{$novos} passo(s) agendado(s)")
+                ->body('Acompanhe na tela Execuções. O envio respeita a janela de horário e os limites de segurança.')
+                ->send();
+        } else {
+            Notification::make()
+                ->warning()
+                ->title('Nada foi agendado')
+                ->body('O lead já está nesta régua, está fechado (ganho/perdido) ou atingiu o limite de follow-ups.')
+                ->send();
+        }
     }
 
     /**

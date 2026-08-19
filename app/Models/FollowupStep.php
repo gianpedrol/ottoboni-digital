@@ -7,6 +7,16 @@ use App\Enums\FollowupModo;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $ordem
+ * @property int $offset_horas
+ * @property FollowupCanal $canal
+ * @property FollowupModo $modo
+ * @property ?string $texto
+ * @property ?string $prompt_ia
+ * @property ?int $kommo_bot_id
+ * @property bool $ativo
+ */
 class FollowupStep extends Model
 {
     protected $fillable = [
@@ -33,6 +43,7 @@ class FollowupStep extends Model
         ];
     }
 
+    /** @return BelongsTo<FollowupPlan, $this> */
     public function plan(): BelongsTo
     {
         return $this->belongsTo(FollowupPlan::class, 'plan_id');

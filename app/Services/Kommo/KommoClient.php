@@ -38,7 +38,10 @@ class KommoClient
     }
 
     /**
-     * @param  array<string, mixed>  $payload
+     * Alguns endpoints do Kommo recebem um objeto, outros (como /tasks)
+     * recebem uma LISTA de objetos — por isso o payload aceita os dois.
+     *
+     * @param  array<string, mixed>|list<array<string, mixed>>  $payload
      * @return array<string, mixed>
      */
     public function post(string $endpoint, array $payload = []): array
