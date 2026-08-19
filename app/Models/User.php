@@ -2,48 +2,73 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
+use App\Enums\DoctorScope;
+use App\Enums\UserRole;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
-    /** @use HasFactory<UserFactory> */
+    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
     protected $fillable = [
         'name',
         'email',
         'password',
+        'role',
+        'doctor_scope',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'role' => UserRole::class,
+            'doctor_scope' => DoctorScope::class,
         ];
+    }
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return true;
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === UserRole::Admin;
+    }
+
+    public function isGestor(): bool
+    {
+        return $this->role === UserRole::Gestor;
+    }
+
+    /**
+     * Pipelines do Kommo que este usuário pode enxergar.
+     * O escopo é aplicado NO FILTRO da consulta, nunca só na view.
+     *
+     * @return array<int>
+     */
+    public function allowedPipelineIds(): array
+    {
+        if ($this->role !== UserRole::Recepcao || $this->doctor_scope === DoctorScope::Ambos) {
+            return array_values(config('kommo.pipelines'));
+        }
+
+        return match ($this->doctor_scope) {
+            DoctorScope::Eduardo => [config('kommo.pipelines.duda')],
+            DoctorScope::Vanessa => [config('kommo.pipelines.luna')],
+            default => array_values(config('kommo.pipelines')),
+        };
     }
 }

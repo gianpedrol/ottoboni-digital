@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 use Illuminate\Support\Str;
 use Pdo\Mysql;
@@ -58,7 +58,9 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'strict' => true,
-            'engine' => null,
+            // O MySQL do WAMP vem com default_storage_engine=MyISAM (chave máx.
+            // 1000 bytes); InnoDB é necessário para índices utf8mb4 e foreign keys.
+            'engine' => env('DB_ENGINE', 'InnoDB'),
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
@@ -182,3 +184,4 @@ return [
     ],
 
 ];
+
