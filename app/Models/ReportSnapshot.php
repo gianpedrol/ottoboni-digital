@@ -5,6 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property array<string, mixed> $filtros
+ * @property ?array<string, mixed> $dados
+ * @property ?int $gerado_por
+ */
 class ReportSnapshot extends Model
 {
     protected $fillable = [

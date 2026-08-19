@@ -28,7 +28,13 @@ interface LeadRepository
     /**
      * @return LengthAwarePaginator<int, array<string, mixed>>
      */
-    public function paginateLeads(LeadFilters $filters, int $page, int $perPage): LengthAwarePaginator;
+    public function paginateLeads(
+        LeadFilters $filters,
+        int $page,
+        int $perPage,
+        ?string $sortColumn = null,
+        ?string $sortDirection = null,
+    ): LengthAwarePaginator;
 
     public function find(int $leadId): ?LeadData;
 

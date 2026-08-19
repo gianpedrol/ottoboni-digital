@@ -22,6 +22,8 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        //
+        // As tabelas de leads usam arrays vindos da API do Kommo; a chave
+        // de linha é o id do lead.
+        \Filament\Support\ArrayRecord::keyName('id');
     }
 }

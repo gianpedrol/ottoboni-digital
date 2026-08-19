@@ -39,9 +39,31 @@ class KommoLeadRepository implements LeadRepository
             ->values();
     }
 
-    public function paginateLeads(LeadFilters $filters, int $page, int $perPage): LengthAwarePaginator
-    {
+    public function paginateLeads(
+        LeadFilters $filters,
+        int $page,
+        int $perPage,
+        ?string $sortColumn = null,
+        ?string $sortDirection = null,
+    ): LengthAwarePaginator {
         $leads = $this->leads($filters);
+
+        if ($sortColumn !== null) {
+            $rows = $leads->map(fn (LeadData $lead): array => $lead->toRow());
+
+            $rows = $sortDirection === 'desc'
+                ? $rows->sortByDesc($sortColumn)
+                : $rows->sortBy($sortColumn);
+
+            $items = $rows->slice(($page - 1) * $perPage, $perPage)->values();
+
+            return new Paginator(
+                items: $items,
+                total: $leads->count(),
+                perPage: $perPage,
+                currentPage: $page,
+            );
+        }
 
         $items = $leads
             ->slice(($page - 1) * $perPage, $perPage)

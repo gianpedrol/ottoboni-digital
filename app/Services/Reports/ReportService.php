@@ -295,7 +295,7 @@ class ReportService
         return [
             'enviados' => $enviados->count(),
             'por_canal' => $enviados
-                ->groupBy(fn (FollowupRun $r): string => $r->canal_usado?->value ?? 'desconhecido')
+                ->groupBy(fn (FollowupRun $r): string => $r->canal_usado !== null ? $r->canal_usado->value : 'desconhecido')
                 ->map(fn ($grupo): int => $grupo->count())
                 ->toArray(),
             'taxa_entrega_pct' => $tentativas > 0
@@ -321,8 +321,15 @@ class ReportService
         $nomes = $this->repository->users()->keyBy('id');
 
         $porResponsavel = $leads
-            ->groupBy(fn (LeadData $l): string => $nomes->get($l->responsibleUserId)?->name
-                ?? ($l->responsibleUserId ? "Usuário {$l->responsibleUserId}" : self::NAO_INFORMADO))
+            ->groupBy(function (LeadData $l) use ($nomes): string {
+                $usuario = $nomes->get($l->responsibleUserId);
+
+                if ($usuario !== null) {
+                    return $usuario->name;
+                }
+
+                return $l->responsibleUserId ? "Usuário {$l->responsibleUserId}" : self::NAO_INFORMADO;
+            })
             ->map(fn (Collection $grupo): int => $grupo->count())
             ->sortDesc()
             ->toArray();

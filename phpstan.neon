@@ -1,0 +1,24 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - app
+
+    level: 6
+
+    # Os tipos vindos de casts de model chegam via PHPDoc; sem isto o PHPStan
+    # marca comparações de enum como "sempre falso".
+    treatPhpDocTypesAsCertain: false
+
+    reportUnmatchedIgnoredErrors: false
+
+    ignoreErrors:
+        # Shape das coleções da API validado nos DTOs; generics de relação
+        # Eloquent não agregam nada aqui.
+        - identifier: missingType.iterableValue
+        - identifier: missingType.generics
+        # collect() sobre offsets de array<string, mixed> (blocos do relatório).
+        - identifier: argument.templateType
+        - identifier: method.unresolvableReturnType
+        - identifier: argument.unresolvableType
