@@ -1,0 +1,14 @@
+{
+    "_page": 1,
+    "_links": { "self": { "href": "/api/v4/leads/custom_fields" } },
+    "_embedded": {
+        "custom_fields": [
+            { "id": 101, "name": "Origem", "type": "select" },
+            { "id": 102, "name": "Temperatura", "type": "select" },
+            { "id": 103, "name": "Procedimento de interesse", "type": "text" },
+            { "id": 104, "name": "Urgência", "type": "select" },
+            { "id": 105, "name": "Score", "type": "numeric" },
+            { "id": 106, "name": "Instagram", "type": "text" }
+        ]
+    }
+}

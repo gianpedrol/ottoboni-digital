@@ -1,0 +1,32 @@
+{
+    "_embedded": {
+        "pipelines": [
+            {
+                "id": 6441483,
+                "name": "Funil Dr. Eduardo",
+                "_embedded": {
+                    "statuses": [
+                        { "id": 51001, "name": "Novo lead", "sort": 10, "color": "#fffeb2" },
+                        { "id": 51002, "name": "Qualificação", "sort": 20, "color": "#fffd7f" },
+                        { "id": 51003, "name": "Agendamento", "sort": 30, "color": "#98cbff" },
+                        { "id": 142, "name": "Venda ganha", "sort": 10000, "color": "#ccff66" },
+                        { "id": 143, "name": "Venda perdida", "sort": 11000, "color": "#d5d8db" }
+                    ]
+                }
+            },
+            {
+                "id": 9219740,
+                "name": "Funil Dra. Vanessa",
+                "_embedded": {
+                    "statuses": [
+                        { "id": 61001, "name": "Novo lead", "sort": 10, "color": "#fffeb2" },
+                        { "id": 61002, "name": "Qualificação", "sort": 20, "color": "#fffd7f" },
+                        { "id": 61003, "name": "Agendamento", "sort": 30, "color": "#98cbff" },
+                        { "id": 142, "name": "Venda ganha", "sort": 10000, "color": "#ccff66" },
+                        { "id": 143, "name": "Venda perdida", "sort": 11000, "color": "#d5d8db" }
+                    ]
+                }
+            }
+        ]
+    }
+}
