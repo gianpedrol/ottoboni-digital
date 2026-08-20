@@ -14,6 +14,16 @@ use RuntimeException;
 class N8nWebhookClient
 {
     /**
+     * O n8n só entra no jogo quando URL e segredo estão no .env.
+     * Sem isso, as telas escondem os canais que dependem dele.
+     */
+    public static function configurado(): bool
+    {
+        return filled(config('painel.n8n.followup_url'))
+            && filled(config('painel.n8n.webhook_secret'));
+    }
+
+    /**
      * @param  array<string, mixed>  $payload
      *
      * @throws RuntimeException quando o n8n não está configurado ou não aceita

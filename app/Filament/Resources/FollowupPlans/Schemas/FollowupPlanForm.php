@@ -7,6 +7,7 @@ use App\Enums\FollowupGatilho;
 use App\Enums\FollowupModo;
 use App\Models\Doctor;
 use App\Repositories\LeadRepository;
+use App\Services\Followup\N8nWebhookClient;
 use App\Services\Kommo\KommoException;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -93,14 +94,16 @@ class FollowupPlanForm
                                     ->helperText('24 = 1 dia · 72 = 3 dias · 168 = 1 semana'),
                                 Select::make('canal')
                                     ->label('Canal')
-                                    ->options(FollowupCanal::class)
-                                    ->default(FollowupCanal::KommoTask->value)
+                                    ->options(fn (): array => self::canaisDisponiveis())
+                                    ->default(FollowupCanal::KommoBot->value)
                                     ->required()
                                     ->live()
-                                    ->helperText('Na Fase 2 o caminho seguro é "Tarefa no Kommo". Instagram e automático dependem do n8n.'),
+                                    ->helperText(N8nWebhookClient::configurado()
+                                        ? 'Salesbot envia direto na conversa (pode ter vídeo e arquivo anexados no construtor do bot). Tarefa aciona a equipe.'
+                                        : 'Salesbot envia direto na conversa (pode ter vídeo e arquivo anexados no construtor do bot). Tarefa aciona a equipe. Instagram DM e canal automático aparecem quando o n8n estiver configurado.'),
                                 Select::make('modo')
                                     ->label('Texto')
-                                    ->options(FollowupModo::class)
+                                    ->options(fn (): array => self::modosDisponiveis())
                                     ->default(FollowupModo::TextoFixo->value)
                                     ->required()
                                     ->live(),
@@ -108,7 +111,7 @@ class FollowupPlanForm
                                     ->label('ID do Salesbot (opcional)')
                                     ->numeric()
                                     ->visible(fn ($get): bool => $get('canal') === FollowupCanal::KommoBot->value)
-                                    ->helperText('Vazio usa o Salesbot configurado no médico.'),
+                                    ->helperText('O ID aparece na URL ao abrir o bot no Kommo. Vazio usa o Salesbot configurado no médico; sem bot nenhum, o passo vira tarefa para a equipe.'),
                                 Textarea::make('texto')
                                     ->label('Mensagem')
                                     ->rows(3)
@@ -129,6 +132,48 @@ class FollowupPlanForm
                             ->columns(2),
                     ]),
             ]);
+    }
+
+    /**
+     * Canais oferecidos no formulário. Instagram DM e "automático" rodam
+     * pelo n8n — enquanto ele não estiver configurado, ficam escondidos
+     * para a tela só oferecer o que funciona de verdade.
+     *
+     * @return array<string, string>
+     */
+    public static function canaisDisponiveis(): array
+    {
+        $canais = N8nWebhookClient::configurado()
+            ? FollowupCanal::cases()
+            : [FollowupCanal::KommoBot, FollowupCanal::KommoTask];
+
+        $options = [];
+
+        foreach ($canais as $canal) {
+            $options[$canal->value] = $canal->getLabel();
+        }
+
+        return $options;
+    }
+
+    /**
+     * Texto gerado por IA também depende do n8n (persona + ancoragem).
+     *
+     * @return array<string, string>
+     */
+    public static function modosDisponiveis(): array
+    {
+        $modos = N8nWebhookClient::configurado()
+            ? FollowupModo::cases()
+            : [FollowupModo::TextoFixo];
+
+        $options = [];
+
+        foreach ($modos as $modo) {
+            $options[$modo->value] = $modo->getLabel();
+        }
+
+        return $options;
     }
 
     /**
