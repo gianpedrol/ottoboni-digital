@@ -40,8 +40,15 @@ class EnviarRespostaAprovadaJob implements ShouldQueue
                 'canal' => $item->canal->value,
                 'ig_id' => $item->ig_id,
                 'comment_id' => $item->comment_id,
+                'ig_username' => $item->ig_username,
                 'comentario' => $item->final_comentario,
                 'dm' => $item->final_dm,
+                // O n8n usa para ajustar a memória da conversa: o rascunho já
+                // pode estar gravado no histórico como se tivesse sido enviado.
+                'rascunho_dm' => $item->rascunho_dm,
+                'mensagem_texto' => $item->mensagem_texto,
+                'comentario_texto' => $item->comentario_texto,
+                'intent' => $item->intent?->value,
             ]);
         } catch (RuntimeException $e) {
             // Na última tentativa o item fica visível como erro no painel,

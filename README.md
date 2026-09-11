@@ -54,6 +54,17 @@ painel comercial pode ser apresentado sem essa área aparecer.
 - **Vigia da fila** (`ia:vigia-fila`, a cada 5 min): avisa pendências no
   sininho, e-mail e push (FCM), e expira o que ficou 24h sem revisão. Nunca
   envia resposta por conta própria.
+- **Base da Luna carregada para revisão** (`db:seed --class=LunaBaseSeeder`):
+  o prompt que roda hoje no n8n entra como v1 dividida em blocos (Direct e
+  comentário), marcada em amarelo como "sem revisão" até alguém publicar a
+  v2 com o aceite. Os cards vêm do Supabase por `ia:importar-supabase luna`,
+  com a estrutura real (código, módulo, perguntas equivalentes, resposta
+  detalhada, status validado/revisar/pendente) — pelo n8n, sem chave do
+  Supabase no servidor.
+- **Instalação sem variáveis extras**: o segredo do webhook e o token do cron
+  derivam da `APP_KEY` quando o `.env` não define (`SegredosDoPainel`), e a
+  tela Configuração da IA mostra os valores prontos para colar. Hospedagem
+  compartilhada sem cron de shell: `GET /cron/{token}` roda o agendador.
 - Telas: Fila de aprovação (um item por vez, com atalhos `A`/`R`/`S`),
   Histórico, Prompts e regras, Acurácia, Base de conhecimento, Exemplos,
   Gatilhos e Configuração.

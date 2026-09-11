@@ -10,7 +10,15 @@
 
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-            @if ($ativa)
+            @if ($ativa && ! $ativa->aceite_responsabilidade)
+                <x-filament::badge color="warning" size="lg" :icon="Heroicon::OutlinedExclamationTriangle">
+                    Versão {{ $ativa->versao }} no ar, ainda sem revisão
+                </x-filament::badge>
+                <span class="text-sm text-gray-500">
+                    {{ $ativa->motivo ?? 'Importada do fluxo atual do n8n.' }}
+                    Revise os blocos abaixo e publique a próxima versão com o aceite.
+                </span>
+            @elseif ($ativa)
                 <x-filament::badge color="success" size="lg" :icon="Heroicon::OutlinedSignal">
                     Versão {{ $ativa->versao }} no ar
                 </x-filament::badge>

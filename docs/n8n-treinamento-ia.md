@@ -34,23 +34,31 @@ Webhook da Meta
 ## 1. `POST /api/ia/contexto`
 
 ```json
-{ "agente": "luna", "intent": "consulta" }
+{ "agente": "luna", "canal": "direct" }
 ```
+
+`canal` é `direct` (conversa no Direct, padrão) ou `comentario` (resposta
+curta a quem comentou num post). Cada canal tem os seus blocos de prompt
+(`IaPromptVersion::BLOCOS_POR_CANAL`); a versão publicada é a mesma.
 
 Resposta (campos que interessam):
 
 | campo | para quê |
 |---|---|
-| `system_prompt` | pronto para ir ao modelo: blocos editáveis + **regras inegociáveis no fim** |
+| `system_prompt` | pronto para ir ao modelo: blocos do canal + **regras inegociáveis no fim** |
+| `prompt_revisado` | `false` = versão importada do n8n, ainda sem aceite humano (o painel avisa em amarelo) |
 | `blocos` | os blocos separados, se o fluxo quiser montar o prompt do seu jeito |
 | `guardrails` | as regras que não se negociam, em lista |
 | `exemplos` | few-shot aprovado pela equipe: `{pergunta, resposta, evitar}` |
-| `cards` | base de conhecimento validada: `{id, pergunta, resposta, tags}` |
+| `cards` | base de conhecimento: `{id, codigo, modulo, categoria, pergunta, perguntas_equivalentes, resposta, resposta_detalhada, status, tags}` |
+| `cards_texto` | o bloco "CARDS OFICIAIS…" **no formato exato** que o fluxo já montava a partir do Supabase — o n8n só troca a fonte |
 | `modelo` | o modelo que a agente deve usar |
 | `prompt_version_id` | manda de volta no `/rascunho` para rastrear qual versão gerou o texto |
 
 Se o painel estiver fora do ar, **use a CONFIG estática como fallback** — o
-fluxo não pode parar de receber por causa do painel.
+fluxo não pode parar de receber por causa do painel. O contrato técnico de
+saída (o bloco "FORMATO DE SAIDA" com o JSON que o `Parse AI` espera) fica no
+n8n, fora do painel: não é coisa de a clínica editar.
 
 ## 2. `POST /api/ia/rascunho`
 
@@ -169,159 +177,53 @@ a equipe vê e decide o que fazer. O callback é **idempotente por
 
 ## Nós do workflow "IA ENVIO APROVADO"
 
-1. **Webhook** (POST, **Raw body ativado** — o HMAC é sobre o corpo cru)
-2. **Code — Valida HMAC** (mesmo código do FOLLOWUP EXECUTOR, trocando o
-   segredo por `$env.IA_WEBHOOK_SECRET`)
-3. **Code — Envia e confirma** (abaixo)
-4. **Respond to Webhook** (200)
+Código completo em [n8n/ia-envio-aprovado.md](n8n/ia-envio-aprovado.md).
+Além de enviar e confirmar, ele **ajusta a memória da conversa no Supabase**
+(tira o rascunho que o fluxo gravou antes do portão e grava o que saiu de
+verdade). Sem isso o echo da mensagem aprovada volta para o fluxo da Luna
+como se um humano tivesse respondido, e ela se cala por 6 horas.
 
-### Código do nó "Envia e confirma"
+O mesmo workflow expõe o webhook `ia-cards`: o painel pede por ele os cards
+do Supabase na importação inicial (`php artisan ia:importar-supabase luna`),
+então a chave do Supabase nunca precisa ir para o servidor do painel.
 
-```javascript
-const rec = $input.first().json.body ?? $input.first().json;
+## O que mudou no fluxo da Luna v2
 
-const GRAPH = 'https://graph.instagram.com/v23.0';
-const TOKEN = $env.IG_TOKEN_LUNA;          // um por agente
-const PAINEL = $env.PAINEL_URL;            // https://painel.../api/ia
-const SECRET = $env.IA_WEBHOOK_SECRET;
-const crypto = require('crypto');
+Patch aplicado nó a nó em [n8n/luna-v2-patch.js](n8n/luna-v2-patch.js) — cada
+trecho substituído está lá, com o motivo. Resumo:
 
-const erros = [];
-let comentarioEnviado = false;
-let dmEnviado = false;
+- **Extrai Comentario Meta** é o único lugar de configuração: `PAINEL_URL` e
+  `PAINEL_SECRET` (o n8n é Community, não tem Variables; `$env` continua tendo
+  prioridade se um dia for configurado no Docker).
+- **CONFIG** (Direct) e **CONFIG Meta** (comentário) chamam `/api/ia/contexto`
+  e trocam PERSONA/BASE pelo prompt publicado, o modelo e os cards do painel.
+  Painel fora do ar = CONFIG estática, como antes.
+- **Duda Comentario** parou de mandar a DM direto: quem decide é o portão.
+  Sem card para a dúvida vira `intent: nao_sei` (fila + notificação), em vez
+  de Telegram ou texto fixo.
+- **Portao Comentario** manda também permalink, legenda e mídia do post
+  (Graph API) para o revisor ver o contexto. **Portao DM** usa os campos reais
+  do nó Normalize (`igId`, `igUsername`, `message`, `hist`).
+- **DM de espera** (nos dois canais) entra na memória; no Direct, o rascunho
+  segurado sai da memória — o `Parse AI` grava o histórico antes do portão.
 
-// resposta pública
-if (rec.comentario && rec.comment_id) {
-  try {
-    await this.helpers.httpRequest({
-      method: 'POST',
-      url: `${GRAPH}/${rec.comment_id}/replies`,
-      qs: { message: rec.comentario, access_token: TOKEN },
-      json: true,
-      timeout: 15000,
-    });
-    comentarioEnviado = true;
-  } catch (e) { erros.push('comentario: ' + (e.message || e)); }
-}
+Sobra do passado que não foi mexida: o nó **CONFIG Meta** carrega uma
+PERSONA/BASE do Dr. Ottoboni que nenhum nó lê. Limpar quando der.
 
-// direct
-if (rec.dm && rec.ig_id) {
-  try {
-    await this.helpers.httpRequest({
-      method: 'POST',
-      url: `${GRAPH}/${rec.ig_id}/messages`,
-      qs: { access_token: TOKEN },
-      body: { recipient: { id: rec.ig_id }, message: { text: rec.dm } },
-      json: true,
-      timeout: 15000,
-    });
-    dmEnviado = true;
-  } catch (e) { erros.push('dm: ' + (e.message || e)); }
-}
+## Configurar (o mínimo)
 
-// confirma no painel, assinado
-const corpo = JSON.stringify({
-  approval_id: rec.approval_id,
-  status: (comentarioEnviado || dmEnviado) ? 'enviado' : 'erro',
-  comentario_enviado: comentarioEnviado,
-  dm_enviado: dmEnviado,
-  erro: erros.length ? erros.join(' | ') : null,
-});
-
-await this.helpers.httpRequest({
-  method: 'POST',
-  url: `${PAINEL}/envio/callback`,
-  headers: {
-    'Content-Type': 'application/json',
-    'X-Signature': 'sha256=' + crypto.createHmac('sha256', SECRET).update(corpo).digest('hex'),
-  },
-  body: corpo,
-  timeout: 10000,
-});
-
-return [{ json: { ok: true, comentarioEnviado, dmEnviado, erros } }];
-```
-
-### Código do nó "Portão" (no fluxo principal)
-
-```javascript
-const crypto = require('crypto');
-const PAINEL = $env.PAINEL_URL;
-const SECRET = $env.IA_WEBHOOK_SECRET;
-
-const assina = (corpo) =>
-  'sha256=' + crypto.createHmac('sha256', SECRET).update(corpo).digest('hex');
-
-const out = [];
-
-for (const item of $input.all()) {
-  const j = item.json;
-
-  const payload = {
-    agente: 'luna',
-    canal: j.evento === 'dm' ? 'direct' : 'comentario',
-    intent: j.intent,
-    confianca: j.confianca ?? null,
-    ig_id: j.ig_id ?? null,
-    ig_username: j.ig_username ?? null,
-    post_id: j.media_id ?? null,
-    post_permalink: j.post_permalink ?? null,
-    post_caption: j.post_caption ?? null,
-    post_media_url: j.post_media_url ?? null,
-    comment_id: j.comment_id ?? null,
-    comentario_texto: j.comentario_texto ?? null,
-    mensagem_texto: j.mensagem_texto ?? null,
-    historico: j._mem?.hist ?? [],
-    rascunho_comentario: j.resposta_comentario ?? null,
-    rascunho_dm: j.resposta_dm ?? null,
-    modelo: j._prompt_modelo ?? null,
-    prompt_version_id: j._prompt_version_id ?? null,
-    cards_usados: j.cards_usados ?? [],
-  };
-
-  const corpo = JSON.stringify(payload);
-
-  let decisao;
-
-  try {
-    decisao = await this.helpers.httpRequest({
-      method: 'POST',
-      url: `${PAINEL}/rascunho`,
-      headers: { 'Content-Type': 'application/json', 'X-Signature': assina(corpo) },
-      body: corpo,
-      json: true,
-      timeout: 10000,
-    });
-  } catch (e) {
-    // Painel fora do ar não vira permissão para falar.
-    decisao = { enviar_direto: false, motivo: 'erro_base', erro: String(e.message || e) };
-  }
-
-  out.push({ json: { ...j, _portao: decisao } });
-}
-
-return out;
-```
-
-Depois dele, um **IF** em `{{ $json._portao.enviar_direto }}`:
-
-- **true** → segue para "Responder Comentario IG" / "Enviar DM IG", e no fim
-  repete a chamada com `ja_enviado: true`
-- **false** → se `_portao.enviar_dm_espera`, manda o DM de espera com
-  `_portao.dm_espera_texto` e confirma em `/api/ia/dm-espera`; senão, encerra
-  em silêncio
-
-## Variáveis no n8n
-
-| variável | o que é |
-|---|---|
-| `PAINEL_URL` | `https://<painel>/api/ia` |
-| `IA_WEBHOOK_SECRET` | o mesmo valor do `.env` do painel |
-| `IG_TOKEN_LUNA` / `IG_TOKEN_DUDA` | token da Graph API por agente |
-
-> Hoje o token do Instagram, a chave do Supabase e a da OpenAI estão em texto
-> puro no nó CONFIG do fluxo. Migre para variáveis de ambiente / Credentials do
-> n8n: qualquer pessoa com acesso à interface lê o nó.
+1. Painel: `Configuração da IA` › "Ligação com o n8n e com o cron" mostra
+   `PAINEL_URL`, o `IA_WEBHOOK_SECRET` (derivado da `APP_KEY` se o `.env`
+   não definir) e a URL do cron.
+2. n8n, fluxo "LUNA - DRA VANESSA v2 (PAINEL)": nó `Extrai Comentario Meta`,
+   colar o segredo em `PAINEL_SECRET`.
+3. n8n, fluxo "IA ENVIO APROVADO": nó `CONFIG ENVIO`, colar o mesmo segredo
+   em `IA_WEBHOOK_SECRET`. Ativar o workflow.
+4. Servidor: `php artisan db:seed --class=LunaBaseSeeder --force` (prompt v1,
+   regras, gatilho) e `php artisan ia:importar-supabase luna` (cards, via n8n).
+5. Hospedagem: cron chamando a URL do passo 1 a cada minuto.
+6. Ativar a v2 (a original já está desligada). Modo treinamento: nada sai
+   sem aprovação.
 
 ## O que fica no Supabase
 

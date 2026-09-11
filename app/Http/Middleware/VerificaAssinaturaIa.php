@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\WebhookLog;
+use App\Support\SegredosDoPainel;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -18,7 +19,7 @@ class VerificaAssinaturaIa
     {
         $corpo = $request->getContent();
         $recebida = (string) $request->header('X-Signature', '');
-        $secret = (string) config('painel.ia.webhook_secret');
+        $secret = SegredosDoPainel::webhookIa();
 
         $esperada = 'sha256='.hash_hmac('sha256', $corpo, $secret);
         $valida = $secret !== '' && hash_equals($esperada, $recebida);

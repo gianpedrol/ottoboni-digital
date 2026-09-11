@@ -22,6 +22,17 @@ class IaCardsTable
         return $table
             ->defaultSort('created_at', 'desc')
             ->columns([
+                TextColumn::make('categoria')
+                    ->label('Assunto')
+                    ->limit(40)
+                    ->searchable()
+                    ->wrap()
+                    ->description(fn (IaCard $r): ?string => $r->codigo),
+                TextColumn::make('modulo')
+                    ->label('Módulo')
+                    ->badge()
+                    ->color('gray')
+                    ->toggleable(),
                 // Pergunta e resposta na mesma célula: é o par que a agente
                 // consulta, e duas colunas cortadas não deixavam ler nenhuma.
                 TextColumn::make('pergunta')
@@ -48,8 +59,16 @@ class IaCardsTable
                 TextColumn::make('status')
                     ->label('Status')
                     ->badge()
-                    ->formatStateUsing(fn (string $state): string => $state === 'validado' ? 'Validado' : 'Pendente')
-                    ->color(fn (string $state): string => $state === 'validado' ? 'success' : 'warning'),
+                    ->color(fn (string $state): string => match ($state) {
+                        'validado' => 'success',
+                        'revisar' => 'warning',
+                        default => 'danger',
+                    })
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'validado' => 'Validado',
+                        'revisar' => 'Revisar',
+                        default => 'Pendente',
+                    }),
                 IconColumn::make('ativo')
                     ->label('Ativo')
                     ->boolean(),
@@ -57,7 +76,15 @@ class IaCardsTable
             ->filters([
                 SelectFilter::make('status')
                     ->label('Status')
-                    ->options(['validado' => 'Validado', 'pendente' => 'Pendente']),
+                    ->options(['validado' => 'Validado', 'revisar' => 'Revisar', 'pendente' => 'Pendente']),
+                SelectFilter::make('modulo')
+                    ->label('Módulo')
+                    ->options(fn (): array => IaCard::query()
+                        ->whereNotNull('modulo')
+                        ->distinct()
+                        ->orderBy('modulo')
+                        ->pluck('modulo', 'modulo')
+                        ->all()),
                 Filter::make('nasceu_de_revisao')
                     ->label('Só os que nasceram de uma revisão')
                     ->query(fn (Builder $query): Builder => $query->where('origem', 'painel_aprovacao')),

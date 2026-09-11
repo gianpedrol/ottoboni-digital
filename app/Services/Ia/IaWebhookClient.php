@@ -3,6 +3,7 @@
 namespace App\Services\Ia;
 
 use App\Models\WebhookLog;
+use App\Support\SegredosDoPainel;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
@@ -18,7 +19,7 @@ class IaWebhookClient
     public static function configurado(): bool
     {
         return filled(config('painel.ia.envio_url'))
-            && filled(config('painel.ia.webhook_secret'));
+            && SegredosDoPainel::webhookIa() !== '';
     }
 
     /**
@@ -29,11 +30,11 @@ class IaWebhookClient
     public function enviar(array $payload): void
     {
         $url = config('painel.ia.envio_url');
-        $secret = config('painel.ia.webhook_secret');
+        $secret = SegredosDoPainel::webhookIa();
 
-        if (blank($url) || blank($secret)) {
+        if (blank($url) || $secret === '') {
             throw new RuntimeException(
-                'Webhook de envio da IA não configurado (IA_ENVIO_URL / IA_WEBHOOK_SECRET no .env).'
+                'Webhook de envio da IA não configurado (IA_ENVIO_URL no .env e APP_KEY gerada).'
             );
         }
 

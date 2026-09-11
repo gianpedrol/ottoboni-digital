@@ -51,6 +51,7 @@ class PromptsERegras extends Page
         'PROCEDIMENTOS' => Heroicon::OutlinedClipboardDocumentList,
         'ATENCAO' => Heroicon::OutlinedExclamationTriangle,
         'HANDOFF_MSG' => Heroicon::OutlinedUserGroup,
+        'COMENTARIO_INSTRUCOES' => Heroicon::OutlinedChatBubbleLeftEllipsis,
     ];
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;
@@ -86,7 +87,7 @@ class PromptsERegras extends Page
         // sem fim, e quem edita mexe em um bloco por vez.
         $abas = [];
 
-        foreach (IaPromptVersion::BLOCOS as $chave => $rotulo) {
+        foreach (IaPromptVersion::blocosDoCanal('direct') as $chave => $rotulo) {
             $abas[] = Tab::make($rotulo)
                 ->icon(self::ICONES[$chave])
                 ->schema([
@@ -99,11 +100,29 @@ class PromptsERegras extends Page
                 ]);
         }
 
+        // Quem comentou num post recebe uma resposta curta no Direct, com
+        // instruções próprias: só este bloco, a mensagem de passagem para a
+        // equipe e os cards da base.
+        $comentario = [];
+
+        foreach (IaPromptVersion::blocosDoCanal('comentario') as $chave => $rotulo) {
+            if ($chave === 'HANDOFF_MSG') {
+                continue; // compartilhado com o Direct; aparece uma vez só
+            }
+
+            $comentario[] = Textarea::make("blocos.{$chave}")
+                ->label($rotulo)
+                ->hiddenLabel()
+                ->rows(10)
+                ->autosize()
+                ->helperText("Entra no prompt como o bloco {$chave}. A agente não usa o texto do Direct nesse caso.");
+        }
+
         return $schema
             ->statePath('data')
             ->components([
-                Section::make('Instruções da agente')
-                    ->description('Isto vira o system prompt. As regras inegociáveis são adicionadas automaticamente no fim e prevalecem sobre o que estiver escrito aqui.')
+                Section::make('Instruções no Direct')
+                    ->description('Isto vira o system prompt da conversa no Direct. As regras inegociáveis são adicionadas automaticamente no fim e prevalecem sobre o que estiver escrito aqui.')
                     ->icon(Heroicon::OutlinedSparkles)
                     ->schema([
                         Tabs::make('Blocos')
@@ -111,6 +130,12 @@ class PromptsERegras extends Page
                             ->contained(false)
                             ->persistTabInQueryString('bloco'),
                     ]),
+
+                Section::make('Instruções para quem comentou num post')
+                    ->description('Resposta curta no Direct para quem comentou. Só estas instruções, a mensagem de passagem para a equipe e os cards da base entram no prompt.')
+                    ->icon(Heroicon::OutlinedChatBubbleLeftEllipsis)
+                    ->schema($comentario)
+                    ->collapsible(),
 
                 Section::make('Publicação')
                     ->description('Cada publicação cria uma versão nova, registrada com seu nome.')

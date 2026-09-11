@@ -23,6 +23,8 @@ class ContextoController extends Controller
         $dados = $request->validate([
             'agente' => ['required', 'string', 'max:20'],
             'intent' => ['nullable', 'string', 'max:30'],
+            // direct (conversa completa) ou comentario (resposta curta a quem comentou num post)
+            'canal' => ['nullable', 'string', 'in:direct,comentario'],
         ]);
 
         $doctor = Doctor::query()->where('agente', $dados['agente'])->first();
@@ -35,6 +37,8 @@ class ContextoController extends Controller
             ? IaIntent::tryFrom((string) $dados['intent'])
             : null;
 
-        return response()->json($montador->paraAgente($doctor, $intent));
+        $canal = (string) ($dados['canal'] ?? 'direct');
+
+        return response()->json($montador->paraAgente($doctor, $intent, $canal));
     }
 }

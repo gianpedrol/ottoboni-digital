@@ -25,6 +25,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Cron por URL (hospedagem compartilhada)
+    |--------------------------------------------------------------------------
+    | GET /cron/{token} roda o schedule:run (e esvazia a fila de banco).
+    | Sem CRON_TOKEN o token é derivado da APP_KEY (ver SegredosDoPainel);
+    | a tela Configuração da IA mostra a URL pronta para colar na hospedagem.
+    */
+
+    'cron_token' => env('CRON_TOKEN'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Webhook do n8n (Fase 2 — FOLLOWUP EXECUTOR)
     |--------------------------------------------------------------------------
     */
@@ -45,7 +56,10 @@ return [
     */
 
     'ia' => [
-        'envio_url' => env('IA_ENVIO_URL'),
+        // Workflow "IA ENVIO APROVADO" no n8n da Pedrol. Troque no .env se o
+        // n8n mudar de endereço.
+        'envio_url' => env('IA_ENVIO_URL', 'https://n8n.gianfrancopedrol.com.br/webhook/ia-envio-aprovado'),
+        // Vazio = derivado da APP_KEY (ver App\Support\SegredosDoPainel).
         'webhook_secret' => env('IA_WEBHOOK_SECRET'),
         'timeout' => (int) env('IA_TIMEOUT', 15),
         'fcm_url' => env('FCM_URL'),
@@ -53,8 +67,11 @@ return [
 
         // Usados só pelo `ia:importar-supabase`, na virada da base para o
         // MySQL. Memória de conversa e echo continuam no Supabase.
+        // Sem SUPABASE_URL/KEY, o comando pede os cards ao n8n (cards_url):
+        // webhook "ia-cards" do workflow IA ENVIO APROVADO, com o mesmo HMAC.
         'supabase_url' => env('SUPABASE_URL'),
         'supabase_key' => env('SUPABASE_KEY'),
+        'cards_url' => env('IA_CARDS_URL', 'https://n8n.gianfrancopedrol.com.br/webhook/ia-cards'),
     ],
 
     /*

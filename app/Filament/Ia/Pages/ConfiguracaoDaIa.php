@@ -9,6 +9,7 @@ use App\Models\IaGateSetting;
 use App\Models\User;
 use App\Services\Ia\IaWebhookClient;
 use App\Support\AgenteSelecionado;
+use App\Support\SegredosDoPainel;
 use BackedEnum;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Radio;
@@ -237,6 +238,29 @@ class ConfiguracaoDaIa extends Page
     public function n8nConfigurado(): bool
     {
         return IaWebhookClient::configurado();
+    }
+
+    /**
+     * Valores que ligam o painel ao n8n e ao cron. Só admin: é segredo.
+     *
+     * @return array{painel_url: string, segredo: string, segredo_origem: string, cron_url: string, envio_url: string, envio_ok: bool}|null
+     */
+    public function ligacoes(): ?array
+    {
+        if (! $this->usuario()->isAdmin()) {
+            return null;
+        }
+
+        $segredo = SegredosDoPainel::webhookIa();
+
+        return [
+            'painel_url' => url('/api/ia'),
+            'segredo' => $segredo !== '' ? $segredo : '(sem APP_KEY no .env)',
+            'segredo_origem' => SegredosDoPainel::webhookIaVeioDoEnv() ? 'definido no .env' : 'derivado da APP_KEY',
+            'cron_url' => SegredosDoPainel::cronToken() !== '' ? SegredosDoPainel::cronUrl() : '(sem APP_KEY no .env)',
+            'envio_url' => (string) config('painel.ia.envio_url'),
+            'envio_ok' => IaWebhookClient::configurado(),
+        ];
     }
 
     /** @return array<int, string> */

@@ -1,8 +1,19 @@
 <?php
 
+use App\Enums\FollowupGatilho;
+use App\Enums\IaApprovalStatus;
+use App\Enums\IaCanal;
+use App\Enums\IaGrauEdicao;
+use App\Enums\IaIntent;
+use App\Enums\IaMotivoFila;
+use App\Models\Doctor;
+use App\Models\FollowupPlan;
+use App\Models\FollowupStep;
+use App\Models\IaApproval;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
-pest()->extend(Tests\TestCase::class)
+pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     // Sem isto, todo teste que renderiza tela exige `npm run build` antes —
     // em clone limpo ou CI a suíte quebra com "Vite manifest not found".
@@ -120,9 +131,9 @@ function kommoFixture(string $name): array
 |--------------------------------------------------------------------------
 */
 
-function criarMedicoDuda(): App\Models\Doctor
+function criarMedicoDuda(): Doctor
 {
-    return App\Models\Doctor::query()->firstOrCreate(
+    return Doctor::query()->firstOrCreate(
         ['agente' => 'duda'],
         [
             'nome' => 'Dr. Eduardo Ottoboni',
@@ -139,21 +150,21 @@ function criarMedicoDuda(): App\Models\Doctor
  * @param  array<string, mixed>  $overridesPlan
  * @param  array<string, mixed>  $overridesStep
  */
-function criarRegua(int $passos = 3, array $overridesPlan = [], array $overridesStep = []): App\Models\FollowupPlan
+function criarRegua(int $passos = 3, array $overridesPlan = [], array $overridesStep = []): FollowupPlan
 {
     $doctor = criarMedicoDuda();
 
-    $plan = App\Models\FollowupPlan::query()->create([
+    $plan = FollowupPlan::query()->create([
         'doctor_id' => $doctor->id,
         'nome' => 'Régua de teste',
         'ativo' => true,
-        'gatilho' => App\Enums\FollowupGatilho::Etapa,
+        'gatilho' => FollowupGatilho::Etapa,
         'gatilho_config' => ['status_id' => 51001],
         ...$overridesPlan,
     ]);
 
     foreach (range(1, $passos) as $i) {
-        App\Models\FollowupStep::query()->create([
+        FollowupStep::query()->create([
             'plan_id' => $plan->id,
             'ordem' => $i,
             'offset_horas' => $i * 24,
@@ -174,9 +185,9 @@ function criarRegua(int $passos = 3, array $overridesPlan = [], array $overrides
 |--------------------------------------------------------------------------
 */
 
-function criarMedicoLuna(): App\Models\Doctor
+function criarMedicoLuna(): Doctor
 {
-    return App\Models\Doctor::query()->firstOrCreate(
+    return Doctor::query()->firstOrCreate(
         ['agente' => 'luna'],
         [
             'nome' => 'Dra. Vanessa Ottoboni',
@@ -191,23 +202,23 @@ function criarMedicoLuna(): App\Models\Doctor
  * Revisão já fechada, para alimentar a janela de acurácia do portão.
  */
 function revisaoFechada(
-    App\Models\Doctor $doctor,
-    App\Enums\IaIntent $intent,
-    App\Enums\IaGrauEdicao $grau,
-    ?App\Enums\IaApprovalStatus $status = null,
-): App\Models\IaApproval {
-    return App\Models\IaApproval::query()->create([
+    Doctor $doctor,
+    IaIntent $intent,
+    IaGrauEdicao $grau,
+    ?IaApprovalStatus $status = null,
+): IaApproval {
+    return IaApproval::query()->create([
         'doctor_id' => $doctor->id,
-        'canal' => App\Enums\IaCanal::Comentario,
+        'canal' => IaCanal::Comentario,
         'intent' => $intent,
-        'motivo_fila' => App\Enums\IaMotivoFila::ModoTreinamento,
+        'motivo_fila' => IaMotivoFila::ModoTreinamento,
         'comentario_texto' => 'pergunta de teste',
         'rascunho_dm' => 'rascunho da agente',
         'final_dm' => 'texto final',
-        'status' => $status ?? App\Enums\IaApprovalStatus::Enviado,
+        'status' => $status ?? IaApprovalStatus::Enviado,
         'grau_edicao' => $grau,
         'score' => $grau->score(),
-        'similaridade' => $grau === App\Enums\IaGrauEdicao::SemEdicao ? 1 : 0.5,
+        'similaridade' => $grau === IaGrauEdicao::SemEdicao ? 1 : 0.5,
         'revisado_em' => now()->subMinutes(random_int(1, 500)),
     ]);
 }
@@ -217,20 +228,20 @@ function revisaoFechada(
  *
  * @param  array<string, mixed>  $overrides
  */
-function itemPendente(App\Models\Doctor $doctor, array $overrides = []): App\Models\IaApproval
+function itemPendente(Doctor $doctor, array $overrides = []): IaApproval
 {
-    return App\Models\IaApproval::query()->create([
+    return IaApproval::query()->create([
         'doctor_id' => $doctor->id,
-        'canal' => App\Enums\IaCanal::Comentario,
-        'intent' => App\Enums\IaIntent::Consulta,
-        'motivo_fila' => App\Enums\IaMotivoFila::ModoTreinamento,
+        'canal' => IaCanal::Comentario,
+        'intent' => IaIntent::Consulta,
+        'motivo_fila' => IaMotivoFila::ModoTreinamento,
         'ig_id' => '9988776655',
         'ig_username' => 'paciente_teste',
-        'comment_id' => 'c_' . uniqid(),
+        'comment_id' => 'c_'.uniqid(),
         'comentario_texto' => 'quanto custa a consulta?',
         'rascunho_comentario' => 'Te chamei no direct! 💛',
         'rascunho_dm' => 'A consulta com a Dra. Vanessa custa R$ 900,00 e dura cerca de 1 hora.',
-        'status' => App\Enums\IaApprovalStatus::Pendente,
+        'status' => IaApprovalStatus::Pendente,
         'modelo' => 'gpt-4.1',
         'expira_em' => now()->addMinutes(30),
         ...$overrides,
@@ -246,7 +257,7 @@ function postIa(string $rota, array $payload, ?string $assinatura = null)
 {
     $corpo = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
-    $assinatura ??= 'sha256=' . hash_hmac('sha256', (string) $corpo, (string) config('painel.ia.webhook_secret'));
+    $assinatura ??= 'sha256='.hash_hmac('sha256', (string) $corpo, (string) config('painel.ia.webhook_secret'));
 
     return test()->call(
         'POST',
@@ -254,7 +265,7 @@ function postIa(string $rota, array $payload, ?string $assinatura = null)
         [],
         [],
         [],
-        ['CONTENT_TYPE' => 'application/json', 'HTTP_X_SIGNATURE' => $assinatura],
+        ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json', 'HTTP_X_SIGNATURE' => $assinatura],
         (string) $corpo,
     );
 }
