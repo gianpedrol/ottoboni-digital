@@ -39,6 +39,11 @@ return [
         'timeout' => (int) env('IA_TIMEOUT', 15),
         'fcm_url' => env('FCM_URL'),
         'fcm_server_key' => env('FCM_SERVER_KEY'),
+
+        // Usados só pelo `ia:importar-supabase`, na virada da base para o
+        // MySQL. Memória de conversa e echo continuam no Supabase.
+        'supabase_url' => env('SUPABASE_URL'),
+        'supabase_key' => env('SUPABASE_KEY'),
     ],
 
     /*

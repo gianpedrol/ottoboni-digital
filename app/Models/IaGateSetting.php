@@ -31,12 +31,22 @@ class IaGateSetting extends Model
     protected $fillable = [
         'doctor_id', 'modo', 'limiar_acuracia', 'kill_switch_acuracia',
         'min_amostras', 'janela', 'intents_sempre_revisa', 'timeout_min',
-        'dm_espera_ativa', 'dm_espera_texto', 'modelo',
+        'dm_espera_ativa', 'dm_espera_texto',
         'notif_emails', 'notif_push', 'atualizado_por',
     ];
 
-    /** O modelo não é editável pelo painel — troca é decisão técnica. */
-    protected $guarded = ['modelo'];
+    /**
+     * "modelo" fica FORA do $fillable de propósito: assim nenhum update em
+     * massa (nem um POST forjado no painel) troca o modelo da agente. Para
+     * mudar de verdade existe o comando `ia:modelo`, que registra quem mudou.
+     *
+     * Cuidado ao editar: em Eloquent o $fillable vence o $guarded, então
+     * declarar o campo nos dois lugares NÃO protege nada.
+     */
+    public function trocarModelo(string $modelo): void
+    {
+        $this->forceFill(['modelo' => $modelo])->save();
+    }
 
     protected function casts(): array
     {

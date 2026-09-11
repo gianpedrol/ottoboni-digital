@@ -10,7 +10,48 @@ disparar follow-ups para os leads.
   interna; as regras dos números dos relatórios estão em
   [docs/metricas.md](docs/metricas.md).
 
-## Estado atual — Fases 1 e 2 prontas
+## Estado atual — Fases 1, 2 e 3 prontas
+
+### Fase 3 — treinamento das agentes (painel `/ia`)
+
+Painel separado, com login próprio, para a equipe revisar o que as agentes
+querem responder no Instagram **antes** de sair. Fora do `/painel` de
+propósito: quem treina a IA não precisa ver atendimentos e relatórios, e o
+painel comercial pode ser apresentado sem essa área aparecer.
+
+- **Portão de aprovação** (`PortaoDeAprovacao`): decide interação por
+  interação se a agente envia sozinha. Começa em modo treinamento (tudo passa
+  por humano) e libera por assunto quando ele prova 30+ revisões, acurácia
+  ≥ 90% e zero rejeições na janela das últimas 50. Freio de mão: se a nota
+  geral cai abaixo de 85%, tudo volta para a fila automaticamente.
+- **"Não sei responder" nunca é liberado**, em nenhum modo. Pergunta no escopo
+  sem card na base entra na fila com destaque, a paciente recebe só um direct
+  de acolhimento, e a resposta que o humano escrever **vira card validado** —
+  na próxima vez a agente responde sozinha. É o ciclo que faz a base crescer.
+- **Acurácia medida pela edição humana**, não por auto-avaliação: aprovado sem
+  tocar 1,00 · ajuste leve 0,80 · ajuste grande 0,40 · refeita ou rejeitada 0.
+  O que saiu automático fica fora da conta — ninguém revisou.
+- **Prompts e regras versionados**: publicar cria uma versão nova com autor,
+  motivo e aceite de responsabilidade (exigido na camada de serviço, não no
+  formulário). Rollback republica uma versão antiga. As 10 regras
+  inegociáveis ficam em tabela separada, injetadas sempre no fim do prompt, e
+  não têm campo de edição no painel.
+- **Modelo em read-only**: fora do `$fillable`, alterável só por
+  `php artisan ia:modelo <agente> <modelo>`, com registro na auditoria.
+- **O painel não tem o token do Instagram.** Aprovar grava a decisão e
+  despacha `EnviarRespostaAprovadaJob`, que chama o n8n com HMAC; o n8n envia e
+  confirma no callback. Contrato em
+  [docs/n8n-treinamento-ia.md](docs/n8n-treinamento-ia.md).
+- **Vigia da fila** (`ia:vigia-fila`, a cada 5 min): avisa pendências no
+  sininho, e-mail e push (FCM), e expira o que ficou 24h sem revisão. Nunca
+  envia resposta por conta própria.
+- Telas: Fila de aprovação (um item por vez, com atalhos `A`/`R`/`S`),
+  Histórico, Prompts e regras, Acurácia, Base de conhecimento, Exemplos,
+  Gatilhos e Configuração.
+
+Virada da base: `php artisan ia:importar-supabase luna --dry-run` traz cards e
+gatilhos do Supabase. Memória de conversa e echo continuam no Supabase — é
+caminho quente de cada mensagem, só o n8n usa.
 
 ### Fase 2 — motor de follow-up
 

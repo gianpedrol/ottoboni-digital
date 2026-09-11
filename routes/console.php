@@ -10,3 +10,7 @@ Schedule::command('painel:limpar-logs')->dailyAt('03:00');
 // (idempotente — a chave única impede agendamento duplicado).
 Schedule::command('followup:dispatch')->everyFiveMinutes();
 Schedule::command('followup:agendar')->hourly();
+
+// Vigia da fila de aprovação das agentes de IA: avisa pendências e expira o
+// que ficou 24h sem revisão. Nunca envia resposta por conta própria.
+Schedule::command('ia:vigia-fila')->everyFiveMinutes();

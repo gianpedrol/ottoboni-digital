@@ -2,7 +2,6 @@
 
 namespace App\Filament\Ia\Pages;
 
-use App\Enums\IaApprovalStatus;
 use App\Enums\IaIntent;
 use App\Models\IaApproval;
 use App\Models\User;
@@ -108,7 +107,7 @@ class FilaDeAprovacao extends Page
             : $query
                 ->whereNotIn('id', $this->pulados)
                 ->orderByRaw("CASE WHEN intent = ? THEN 0 ELSE 1 END", [IaIntent::NaoSei->value])
-                ->orderByRaw('CASE WHEN expira_em IS NOT NULL AND expira_em < NOW() THEN 0 ELSE 1 END')
+                ->orderByRaw('CASE WHEN expira_em IS NOT NULL AND expira_em < ? THEN 0 ELSE 1 END', [now()])
                 ->orderBy('created_at')
                 ->first();
 
