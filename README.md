@@ -66,7 +66,10 @@ painel comercial pode ser apresentado sem essa área aparecer.
   junto. A agente devolve os códigos na resposta, o revisor confere na fila
   (marcado = ela escolheu) e o n8n envia: imagem como anexo, PDF/vídeo/link
   como mensagem com o endereço. O arquivo sai por URL pública com token
-  (`/materiais/{token}/{nome}`), sem depender de `storage:link`.
+  (`/materiais/{token}/{nome}`), sem depender de `storage:link`. Trocar o
+  material na revisão vira exemplo aprovado (com o material), e um "não sei"
+  respondido vira card já apontando para o documento — os exemplos entram no
+  system prompt, então a revisão humana treina a agente de verdade.
 - **Instalação sem variáveis extras**: o segredo do webhook e o token do cron
   derivam da `APP_KEY` quando o `.env` não define (`SegredosDoPainel`), e a
   tela Configuração da IA mostra os valores prontos para colar. Hospedagem

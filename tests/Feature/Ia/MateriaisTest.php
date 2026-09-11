@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\DoctorScope;
+use App\Enums\IaIntent;
 use App\Enums\UserRole;
 use App\Filament\Ia\Pages\FilaDeAprovacao;
 use App\Filament\Ia\Resources\IaMaterials\IaMaterialResource;
@@ -8,6 +9,7 @@ use App\Jobs\EnviarRespostaAprovadaJob;
 use App\Models\Doctor;
 use App\Models\IaApproval;
 use App\Models\IaCard;
+use App\Models\IaExample;
 use App\Models\IaMaterial;
 use App\Models\User;
 use App\Services\Ia\AprovadorDeResposta;
@@ -148,4 +150,59 @@ it('abre a tela de materiais e mostra os materiais na fila', function () {
     $this->actingAs($admin)->get(FilaDeAprovacao::getUrl())->assertOk()
         ->assertSee('Vai junto com o direct')
         ->assertSee('Foto do Flor&Ser Raiz');
+});
+
+it('a escolha de materiais do humano vira exemplo e entra no prompt como treino', function () {
+    Queue::fake();
+    materialImagem($this->luna);
+    IaMaterial::query()->create(['doctor_id' => $this->luna->id, 'codigo' => 'pleno_pdf', 'nome' => 'PDF do Flor&Ser Pleno', 'tipo' => 'link', 'url' => 'https://x.test/pleno.pdf']);
+
+    // a agente escolheu o material errado; o humano troca sem mexer no texto
+    $item = itemPendente($this->luna, ['materiais' => ['pleno_pdf']]);
+    $revisor = User::factory()->create(['role' => UserRole::Admin, 'doctor_scope' => DoctorScope::Ambos]);
+
+    app(AprovadorDeResposta::class)->aprovar($item, null, null, $revisor, true, null, true, ['raiz_foto']);
+
+    $exemplo = IaExample::query()->where('approval_id', $item->id)->sole();
+
+    expect($exemplo->materiais)->toBe(['raiz_foto'])
+        ->and($exemplo->resposta)->toBe($item->rascunho_dm);
+
+    $r = postIa('/api/ia/contexto', ['agente' => 'luna'])->assertOk();
+
+    expect($r->json('exemplos.0.materiais'))->toBe(['raiz_foto'])
+        ->and($r->json('system_prompt'))->toContain('### EXEMPLOS APROVADOS PELA EQUIPE')
+        ->and($r->json('system_prompt'))->toContain('Materiais que foram junto: [raiz_foto]')
+        ->and($r->json('system_prompt'))->toContain('Resposta aprovada pela equipe: '.$item->rascunho_dm);
+});
+
+it('aprovar sem tocar em nada não cria exemplo', function () {
+    Queue::fake();
+    materialImagem($this->luna);
+
+    $item = itemPendente($this->luna, ['materiais' => ['raiz_foto']]);
+    $revisor = User::factory()->create(['role' => UserRole::Admin, 'doctor_scope' => DoctorScope::Ambos]);
+
+    app(AprovadorDeResposta::class)->aprovar($item, null, null, $revisor, true);
+
+    expect(IaExample::query()->where('approval_id', $item->id)->exists())->toBeFalse();
+});
+
+it('um "não sei" respondido pelo humano vira card já com o material', function () {
+    Queue::fake();
+    materialImagem($this->luna);
+
+    $item = itemPendente($this->luna, ['intent' => IaIntent::NaoSei, 'rascunho_dm' => null, 'materiais' => []]);
+    $revisor = User::factory()->create(['role' => UserRole::Admin, 'doctor_scope' => DoctorScope::Ambos]);
+
+    app(AprovadorDeResposta::class)->aprovar($item, null, 'O Raiz custa R$ 710,00 e inclui a consulta.', $revisor, true, null, true, ['raiz_foto']);
+
+    $card = IaCard::query()->where('approval_id', $item->id)->sole();
+
+    expect($card->materiais)->toBe(['raiz_foto'])
+        ->and($card->status)->toBe('validado');
+
+    $r = postIa('/api/ia/contexto', ['agente' => 'luna'])->assertOk();
+
+    expect($r->json('cards_texto'))->toContain('Materiais para enviar junto: [raiz_foto] Foto do Flor&Ser Raiz');
 });

@@ -50,6 +50,7 @@ class MontadorDeContexto
         $guardrails = IaGuardrail::paraAgente($doctor->id);
         $cards = $this->cardsAtivos($doctor->id);
         $materiais = $this->materiais($doctor->id);
+        $exemplos = $this->exemplos($doctor->id, $intent);
 
         return [
             'agente' => $doctor->agente,
@@ -61,8 +62,8 @@ class MontadorDeContexto
             'prompt_revisado' => (bool) $versao?->aceite_responsabilidade,
             'blocos' => $versao->blocos ?? [],
             'guardrails' => $guardrails,
-            'system_prompt' => $this->systemPrompt($versao, $guardrails, $doctor, $canal, $materiais),
-            'exemplos' => $this->exemplos($doctor->id, $intent),
+            'system_prompt' => $this->systemPrompt($versao, $guardrails, $doctor, $canal, $materiais, $exemplos),
+            'exemplos' => $exemplos,
             'cards' => $this->cards($cards),
             'cards_texto' => $this->cardsTexto($cards, $materiais),
             'materiais' => $materiais,
@@ -72,12 +73,13 @@ class MontadorDeContexto
 
     /**
      * O system prompt pronto para ir ao modelo: blocos editáveis do canal,
-     * exemplos aprovados e, por último, as regras inegociáveis.
+     * materiais, exemplos aprovados e, por último, as regras inegociáveis.
      *
      * @param  array<int, string>  $guardrails
      * @param  array<int, array{codigo: string, nome: string, tipo: string, url: ?string, quando_usar: ?string}>  $materiais
+     * @param  array<int, array{pergunta: string, resposta: string, evitar: ?string, materiais: array<int, string>}>  $exemplos
      */
-    public function systemPrompt(?IaPromptVersion $versao, array $guardrails, Doctor $doctor, string $canal = 'direct', array $materiais = []): string
+    public function systemPrompt(?IaPromptVersion $versao, array $guardrails, Doctor $doctor, string $canal = 'direct', array $materiais = [], array $exemplos = []): string
     {
         $partes = [];
         $blocosDoCanal = IaPromptVersion::blocosDoCanal($canal);
@@ -94,6 +96,10 @@ class MontadorDeContexto
 
         if ($materiais !== []) {
             $partes[] = $this->blocoDeMateriais($materiais);
+        }
+
+        if ($exemplos !== []) {
+            $partes[] = $this->blocoDeExemplos($exemplos);
         }
 
         if ($guardrails !== []) {
@@ -119,7 +125,7 @@ class MontadorDeContexto
      * Exemplos como few-shot. Prioridade alta primeiro — é onde ficam as
      * respostas que nasceram de um "não sei" corrigido por humano.
      *
-     * @return array<int, array{pergunta: string, resposta: string, evitar: ?string}>
+     * @return array<int, array{pergunta: string, resposta: string, evitar: ?string, materiais: array<int, string>}>
      */
     public function exemplos(int $doctorId, ?IaIntent $intent = null): array
     {
@@ -135,8 +141,39 @@ class MontadorDeContexto
                 'pergunta' => $e->pergunta,
                 'resposta' => $e->resposta,
                 'evitar' => $e->resposta_rejeitada,
+                'materiais' => $e->materiais ?? [],
             ])
             ->all();
+    }
+
+    /**
+     * O que a equipe já aprovou, como few-shot: é aqui que a revisão humana
+     * vira treino de verdade — texto e materiais que foram junto.
+     *
+     * @param  array<int, array{pergunta: string, resposta: string, evitar: ?string, materiais: array<int, string>}>  $exemplos
+     */
+    private function blocoDeExemplos(array $exemplos): string
+    {
+        $corta = fn (string $t): string => mb_strlen($t) > 600 ? mb_substr($t, 0, 600).'…' : $t;
+        $linhas = [];
+
+        foreach ($exemplos as $i => $e) {
+            $bloco = ($i + 1).'. Pessoa: '.$corta(trim($e['pergunta']))
+                ."\n   Resposta aprovada pela equipe: ".$corta(trim($e['resposta']));
+
+            if ($e['materiais'] !== []) {
+                $bloco .= "\n   Materiais que foram junto: ".implode(', ', array_map(fn (string $c): string => "[{$c}]", $e['materiais']));
+            }
+
+            if (filled($e['evitar']) && trim((string) $e['evitar']) !== trim($e['resposta'])) {
+                $bloco .= "\n   Como NÃO responder (foi corrigido): ".$corta(trim((string) $e['evitar']));
+            }
+
+            $linhas[] = $bloco;
+        }
+
+        return "### EXEMPLOS APROVADOS PELA EQUIPE (siga o tom, o conteúdo e a escolha de materiais)\n"
+            .implode("\n", $linhas);
     }
 
     /**

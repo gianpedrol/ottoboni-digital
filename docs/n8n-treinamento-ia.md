@@ -49,7 +49,7 @@ Resposta (campos que interessam):
 | `prompt_revisado` | `false` = versão importada do n8n, ainda sem aceite humano (o painel avisa em amarelo) |
 | `blocos` | os blocos separados, se o fluxo quiser montar o prompt do seu jeito |
 | `guardrails` | as regras que não se negociam, em lista |
-| `exemplos` | few-shot aprovado pela equipe: `{pergunta, resposta, evitar}` |
+| `exemplos` | few-shot aprovado pela equipe: `{pergunta, resposta, evitar, materiais}` — também entram no `system_prompt` (bloco EXEMPLOS APROVADOS PELA EQUIPE) |
 | `cards` | base de conhecimento: `{id, codigo, modulo, categoria, pergunta, perguntas_equivalentes, resposta, resposta_detalhada, status, tags}` |
 | `cards_texto` | o bloco "CARDS OFICIAIS…" **no formato exato** que o fluxo já montava a partir do Supabase — o n8n só troca a fonte; cada card traz "Materiais para enviar junto" |
 | `materiais` | o que a agente pode mandar: `{codigo, nome, tipo, url, quando_usar}`; o `system_prompt` ganha o bloco "MATERIAIS QUE VOCÊ PODE ENVIAR" e a IA devolve os códigos em `materiais` na saída |

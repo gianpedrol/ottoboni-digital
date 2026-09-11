@@ -244,7 +244,7 @@
                                 <div>
                                     <p class="mb-1.5 text-sm font-medium text-gray-950">
                                         Vai junto com o direct
-                                        <span class="font-normal text-gray-500">— marcado = a agente escolheu; desmarque o que não cabe</span>
+                                        <span class="font-normal text-gray-500">— marcado = a agente escolheu; marque ou desmarque. O que você deixar vira treino: ela aprende qual documento vai com qual assunto.</span>
                                     </p>
                                     <div class="grid gap-2 sm:grid-cols-2">
                                         @foreach ($materiaisDisponiveis as $m)
@@ -258,9 +258,12 @@
                                                             — {{ $m['quando_usar'] }}
                                                         @endif
                                                     </span>
-                                                    @if ($m['url'])
-                                                        <a href="{{ $m['url'] }}" target="_blank" rel="noopener" class="text-xs font-medium text-primary-600 hover:underline">ver</a>
-                                                    @endif
+                                                    <span class="mt-1 flex flex-wrap gap-3 text-xs font-medium">
+                                                        @if ($m['url'])
+                                                            <a href="{{ $m['url'] }}" target="_blank" rel="noopener" class="text-primary-600 hover:underline">ver material</a>
+                                                        @endif
+                                                        <a href="{{ $this->urlDoMaterial($m['codigo']) }}" target="_blank" rel="noopener" class="text-gray-500 hover:underline">ajustar regra de uso</a>
+                                                    </span>
                                                 </span>
                                             </label>
                                         @endforeach

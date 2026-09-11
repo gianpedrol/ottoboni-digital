@@ -10,11 +10,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * Exemplo aprovado pela equipe. Volta para o prompt da agente como few-shot —
  * é o que faz o painel ser treinamento e não só censura.
  */
+/**
+ * @property ?array<int, string> $materiais
+ * @property ?string $resposta_rejeitada
+ */
 class IaExample extends Model
 {
     protected $fillable = [
         'doctor_id', 'intent', 'canal', 'pergunta', 'resposta',
-        'resposta_rejeitada', 'approval_id', 'prioridade', 'ativo', 'criado_por',
+        'resposta_rejeitada', 'materiais', 'approval_id', 'prioridade', 'ativo', 'criado_por',
     ];
 
     protected function casts(): array
@@ -23,6 +27,7 @@ class IaExample extends Model
             'intent' => IaIntent::class,
             'ativo' => 'boolean',
             'prioridade' => 'integer',
+            'materiais' => 'array',
         ];
     }
 

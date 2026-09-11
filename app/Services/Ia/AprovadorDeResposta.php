@@ -143,7 +143,11 @@ class AprovadorDeResposta
     {
         $eraNaoSei = $item->intent === IaIntent::NaoSei;
 
-        if ($grau === IaGrauEdicao::SemEdicao && ! $eraNaoSei) {
+        // Trocar os materiais (tirar o PDF errado, pôr o certo) também é
+        // correção — vira exemplo mesmo que o texto não tenha sido tocado.
+        $mexeuNosMateriais = ($item->final_materiais ?? []) !== ($item->materiais ?? []);
+
+        if ($grau === IaGrauEdicao::SemEdicao && ! $eraNaoSei && ! $mexeuNosMateriais) {
             return;
         }
 
@@ -163,6 +167,7 @@ class AprovadorDeResposta
             'resposta_rejeitada' => $this->limpar(
                 (string) ($item->rascunho_dm ?? $item->rascunho_comentario)
             ),
+            'materiais' => $item->final_materiais ?? [],
             'approval_id' => $item->id,
             'prioridade' => $eraNaoSei ? 10 : 0,
             'criado_por' => $autor->id,
@@ -172,12 +177,14 @@ class AprovadorDeResposta
             return;
         }
 
-        // A resposta do humano entra na base como card validado: na próxima vez
-        // a agente já sabe e não precisa escalar de novo.
+        // A resposta do humano entra na base como card validado, já com os
+        // materiais que ele mandou junto: na próxima vez a agente sabe o que
+        // responder E o que anexar, sem escalar de novo.
         IaCard::query()->create([
             'doctor_id' => $item->doctor_id,
             'pergunta' => $pergunta,
             'resposta' => $resposta,
+            'materiais' => $item->final_materiais ?? [],
             'status' => 'validado',
             'origem' => 'painel_aprovacao',
             'approval_id' => $item->id,

@@ -44,10 +44,20 @@ return new class extends Migration
         Schema::table('ia_cards', function (Blueprint $table) {
             $table->json('materiais')->nullable()->after('resposta_detalhada');
         });
+
+        // O exemplo aprovado guarda também o que foi junto: é assim que a
+        // escolha do humano vira treino para a próxima vez.
+        Schema::table('ia_examples', function (Blueprint $table) {
+            $table->json('materiais')->nullable()->after('resposta_rejeitada');
+        });
     }
 
     public function down(): void
     {
+        Schema::table('ia_examples', function (Blueprint $table) {
+            $table->dropColumn('materiais');
+        });
+
         Schema::table('ia_cards', function (Blueprint $table) {
             $table->dropColumn('materiais');
         });

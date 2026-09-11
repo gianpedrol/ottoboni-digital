@@ -3,7 +3,9 @@
 namespace App\Filament\Ia\Pages;
 
 use App\Enums\IaIntent;
+use App\Filament\Ia\Resources\IaMaterials\IaMaterialResource;
 use App\Models\IaApproval;
+use App\Models\IaMaterial;
 use App\Models\User;
 use App\Services\Ia\AprovadorDeResposta;
 use App\Services\Ia\MontadorDeContexto;
@@ -308,6 +310,25 @@ class FilaDeAprovacao extends Page
         }
 
         return app(MontadorDeContexto::class)->materiais($item->doctor_id);
+    }
+
+    /**
+     * Abre o material direto na edição (Materiais › editar), para ajustar o
+     * "quando usar" sem sair da revisão.
+     */
+    public function urlDoMaterial(string $codigo): string
+    {
+        $item = $this->item();
+        $material = $item === null ? null : IaMaterial::query()
+            ->where('doctor_id', $item->doctor_id)
+            ->where('codigo', $codigo)
+            ->first();
+
+        if ($material === null) {
+            return IaMaterialResource::getUrl('index');
+        }
+
+        return IaMaterialResource::getUrl('index', ['tableAction' => 'edit', 'tableActionRecord' => $material->id]);
     }
 
     private function usuario(): User
