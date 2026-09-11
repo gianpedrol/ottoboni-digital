@@ -25,46 +25,73 @@
     @if ($this->ligacoes() !== null)
         @php $lig = $this->ligacoes(); @endphp
         {{-- Só admin vê: são os valores que ligam o painel ao n8n e ao cron da hospedagem. --}}
-        <x-filament::section collapsible collapsed>
+        <x-filament::section collapsible>
             <x-slot name="heading">
                 <span class="inline-flex items-center gap-2">
                     <x-filament::icon :icon="Heroicon::OutlinedLink" class="h-4 w-4" />
-                    Ligação com o n8n e com o cron
+                    Ligar o painel ao n8n e ao cron (passo a passo)
                 </span>
             </x-slot>
             <x-slot name="description">
-                Copie daqui, não digite. O segredo é o mesmo nas duas pontas: no n8n ele vai no nó CONFIG do fluxo
-                da Luna v2 e no nó CONFIG ENVIO do fluxo "IA ENVIO APROVADO".
+                Só existe UM segredo para copiar. Ele vai em dois nós do n8n, e a URL do cron vai na hospedagem.
+                Copie daqui (clique no valor: ele seleciona inteiro), não digite.
             </x-slot>
 
-            <dl class="grid gap-4 text-sm sm:grid-cols-2">
-                <div>
-                    <dt class="text-xs font-medium uppercase tracking-wide text-gray-500">PAINEL_URL (no n8n)</dt>
-                    <dd class="mt-1 select-all break-all rounded-lg bg-gray-50 px-3 py-2 font-mono text-xs text-gray-900">{{ $lig['painel_url'] }}</dd>
-                </div>
-                <div>
-                    <dt class="text-xs font-medium uppercase tracking-wide text-gray-500">
-                        IA_WEBHOOK_SECRET (no n8n)
-                        <span class="font-normal normal-case text-gray-400">— {{ $lig['segredo_origem'] }}</span>
-                    </dt>
-                    <dd class="mt-1 select-all break-all rounded-lg bg-gray-50 px-3 py-2 font-mono text-xs text-gray-900">{{ $lig['segredo'] }}</dd>
-                </div>
-                <div>
-                    <dt class="text-xs font-medium uppercase tracking-wide text-gray-500">URL do cron (na hospedagem, a cada minuto)</dt>
-                    <dd class="mt-1 select-all break-all rounded-lg bg-gray-50 px-3 py-2 font-mono text-xs text-gray-900">{{ $lig['cron_url'] }}</dd>
-                </div>
-                <div>
-                    <dt class="text-xs font-medium uppercase tracking-wide text-gray-500">
-                        Webhook de envio (IA_ENVIO_URL)
-                        @if ($lig['envio_ok'])
-                            <span class="font-normal normal-case text-success-600">— configurado</span>
-                        @else
-                            <span class="font-normal normal-case text-danger-600">— falta no .env</span>
-                        @endif
-                    </dt>
-                    <dd class="mt-1 break-all rounded-lg bg-gray-50 px-3 py-2 font-mono text-xs text-gray-900">{{ $lig['envio_url'] ?: '—' }}</dd>
-                </div>
-            </dl>
+            <ol class="space-y-5 text-sm">
+                <li class="flex gap-3">
+                    <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-600 text-xs font-bold text-white">1</span>
+                    <div class="min-w-0 flex-1">
+                        <p class="font-medium text-gray-950">Copie o segredo</p>
+                        <p class="text-gray-500">
+                            É o <code class="rounded bg-gray-100 px-1 font-mono text-xs">IA_WEBHOOK_SECRET</code>
+                            ({{ $lig['segredo_origem'] }}).
+                        </p>
+                        <p class="mt-1 select-all break-all rounded-lg bg-gray-50 px-3 py-2 font-mono text-xs text-gray-900">{{ $lig['segredo'] }}</p>
+                    </div>
+                </li>
+                <li class="flex gap-3">
+                    <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-600 text-xs font-bold text-white">2</span>
+                    <div class="min-w-0 flex-1">
+                        <p class="font-medium text-gray-950">Cole no fluxo da Luna v2</p>
+                        <p class="text-gray-500">
+                            n8n › workflow <strong>LUNA - DRA VANESSA v2 (PAINEL)</strong> › abra o nó
+                            <strong>Extrai Comentario Meta</strong> › no começo do código, troque
+                            <code class="rounded bg-gray-100 px-1 font-mono text-xs">COLE_AQUI_O_IA_WEBHOOK_SECRET</code>
+                            pelo segredo (mantenha as aspas) › Save.
+                            A <code class="rounded bg-gray-100 px-1 font-mono text-xs">PAINEL_URL</code> logo acima já está preenchida com
+                            <span class="font-mono text-xs">{{ $lig['painel_url'] }}</span>.
+                        </p>
+                    </div>
+                </li>
+                <li class="flex gap-3">
+                    <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-600 text-xs font-bold text-white">3</span>
+                    <div class="min-w-0 flex-1">
+                        <p class="font-medium text-gray-950">Cole no fluxo de envio e ative-o</p>
+                        <p class="text-gray-500">
+                            n8n › workflow <strong>IA ENVIO APROVADO</strong> › nó <strong>CONFIG ENVIO</strong> › troque o mesmo
+                            <code class="rounded bg-gray-100 px-1 font-mono text-xs">COLE_AQUI_O_IA_WEBHOOK_SECRET</code>
+                            › Save › ligue a chave <strong>Inactive → Active</strong> no topo.
+                            @if ($lig['envio_ok'])
+                                <span class="text-success-600">O painel já aponta para ele:</span>
+                            @else
+                                <span class="text-danger-600">Falta IA_ENVIO_URL no .env do painel:</span>
+                            @endif
+                            <span class="font-mono text-xs">{{ $lig['envio_url'] ?: '—' }}</span>
+                        </p>
+                    </div>
+                </li>
+                <li class="flex gap-3">
+                    <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-600 text-xs font-bold text-white">4</span>
+                    <div class="min-w-0 flex-1">
+                        <p class="font-medium text-gray-950">Agende o cron na hospedagem</p>
+                        <p class="text-gray-500">
+                            Painel da KingHost › Agendamento de tarefas › todos os campos em "Todos" (a cada minuto) › em
+                            "Arquivo do script" a URL abaixo. É ela que dispara o vigia da fila (avisos de pendência) e os follow-ups.
+                        </p>
+                        <p class="mt-1 select-all break-all rounded-lg bg-gray-50 px-3 py-2 font-mono text-xs text-gray-900">{{ $lig['cron_url'] }}</p>
+                    </div>
+                </li>
+            </ol>
         </x-filament::section>
     @endif
 

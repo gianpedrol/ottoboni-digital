@@ -8,6 +8,7 @@ use App\Models\IaCard;
 use App\Models\IaPromptVersion;
 use App\Models\IaTrigger;
 use App\Models\User;
+use App\Support\AgenteSelecionado;
 use App\Support\SegredosDoPainel;
 use Database\Seeders\LunaBaseSeeder;
 use Illuminate\Support\Facades\Artisan;
@@ -275,7 +276,7 @@ it('mostra os valores de ligação só para admin na Configuração da IA', func
     $this->actingAs($admin)
         ->get(ConfiguracaoDaIa::getUrl())
         ->assertOk()
-        ->assertSee('Ligação com o n8n e com o cron')
+        ->assertSee('Ligar o painel ao n8n e ao cron')
         ->assertSee(url('/api/ia'))
         ->assertSee(SegredosDoPainel::webhookIa());
 
@@ -313,4 +314,13 @@ it('busca os cards pelo n8n quando o servidor não tem a chave do Supabase', fun
             && $request->hasHeader('X-Signature', $esperada)
             && json_decode($request->body(), true) === ['agente' => 'luna', 'tabela' => 'luna_cards'];
     });
+});
+
+it('abre as telas com a Luna selecionada, e a Duda só quando pedida', function () {
+    $duda = criarMedicoDuda();
+    $admin = User::factory()->create(['role' => UserRole::Admin, 'doctor_scope' => DoctorScope::Ambos]);
+
+    expect(AgenteSelecionado::resolver($admin, null))->toBe($this->luna->id)
+        ->and(AgenteSelecionado::resolver($admin, $duda->id))->toBe($duda->id)
+        ->and(array_key_first(AgenteSelecionado::options($admin)))->toBe($this->luna->id);
 });

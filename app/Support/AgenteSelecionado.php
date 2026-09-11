@@ -19,8 +19,9 @@ class AgenteSelecionado
         return Doctor::query()
             ->where('ativo', true)
             ->whereIn('id', self::permitidos($user))
-            ->orderBy('id')
             ->get()
+            // A agente em treinamento primeiro na lista.
+            ->sortBy(fn (Doctor $d): int => $d->agente === self::AGENTE_PADRAO ? 0 : 1)
             ->mapWithKeys(fn (Doctor $d): array => [
                 $d->id => ucfirst($d->agente).' — '.$d->nome,
             ])
@@ -48,8 +49,14 @@ class AgenteSelecionado
     }
 
     /**
+     * Agente que aparece selecionado ao abrir as telas: a Luna, que é quem
+     * está em treinamento. A Duda já está validada e fica de fora do foco.
+     */
+    public const AGENTE_PADRAO = 'luna';
+
+    /**
      * Resolve o agente escolhido na tela. Pedido fora do escopo (URL
-     * manipulada) cai no primeiro permitido — nunca amplia o acesso.
+     * manipulada) cai no padrão permitido — nunca amplia o acesso.
      */
     public static function resolver(User $user, int|string|null $doctorId): ?int
     {
@@ -61,6 +68,15 @@ class AgenteSelecionado
 
         $id = (int) $doctorId;
 
-        return in_array($id, $permitidos, true) ? $id : $permitidos[0];
+        if (in_array($id, $permitidos, true)) {
+            return $id;
+        }
+
+        $padrao = Doctor::query()
+            ->where('agente', self::AGENTE_PADRAO)
+            ->whereIn('id', $permitidos)
+            ->value('id');
+
+        return $padrao !== null ? (int) $padrao : $permitidos[0];
     }
 }
