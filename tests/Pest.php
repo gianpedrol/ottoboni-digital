@@ -164,3 +164,94 @@ function criarRegua(int $passos = 3, array $overridesPlan = [], array $overrides
 
     return $plan;
 }
+
+/*
+|--------------------------------------------------------------------------
+| Helpers da área de treinamento das agentes de IA
+|--------------------------------------------------------------------------
+*/
+
+function criarMedicoLuna(): App\Models\Doctor
+{
+    return App\Models\Doctor::query()->firstOrCreate(
+        ['agente' => 'luna'],
+        [
+            'nome' => 'Dra. Vanessa Ottoboni',
+            'kommo_pipeline_id' => config('kommo.pipelines.luna'),
+            'ig_user_id' => '17841400000000000',
+            'ativo' => true,
+        ],
+    );
+}
+
+/**
+ * Revisão já fechada, para alimentar a janela de acurácia do portão.
+ */
+function revisaoFechada(
+    App\Models\Doctor $doctor,
+    App\Enums\IaIntent $intent,
+    App\Enums\IaGrauEdicao $grau,
+    ?App\Enums\IaApprovalStatus $status = null,
+): App\Models\IaApproval {
+    return App\Models\IaApproval::query()->create([
+        'doctor_id' => $doctor->id,
+        'canal' => App\Enums\IaCanal::Comentario,
+        'intent' => $intent,
+        'motivo_fila' => App\Enums\IaMotivoFila::ModoTreinamento,
+        'comentario_texto' => 'pergunta de teste',
+        'rascunho_dm' => 'rascunho da agente',
+        'final_dm' => 'texto final',
+        'status' => $status ?? App\Enums\IaApprovalStatus::Enviado,
+        'grau_edicao' => $grau,
+        'score' => $grau->score(),
+        'similaridade' => $grau === App\Enums\IaGrauEdicao::SemEdicao ? 1 : 0.5,
+        'revisado_em' => now()->subMinutes(random_int(1, 500)),
+    ]);
+}
+
+/**
+ * Item pendente na fila, do jeito que o n8n cria.
+ *
+ * @param  array<string, mixed>  $overrides
+ */
+function itemPendente(App\Models\Doctor $doctor, array $overrides = []): App\Models\IaApproval
+{
+    return App\Models\IaApproval::query()->create([
+        'doctor_id' => $doctor->id,
+        'canal' => App\Enums\IaCanal::Comentario,
+        'intent' => App\Enums\IaIntent::Consulta,
+        'motivo_fila' => App\Enums\IaMotivoFila::ModoTreinamento,
+        'ig_id' => '9988776655',
+        'ig_username' => 'paciente_teste',
+        'comment_id' => 'c_' . uniqid(),
+        'comentario_texto' => 'quanto custa a consulta?',
+        'rascunho_comentario' => 'Te chamei no direct! 💛',
+        'rascunho_dm' => 'A consulta com a Dra. Vanessa custa R$ 900,00 e dura cerca de 1 hora.',
+        'status' => App\Enums\IaApprovalStatus::Pendente,
+        'modelo' => 'gpt-4.1',
+        'expira_em' => now()->addMinutes(30),
+        ...$overrides,
+    ]);
+}
+
+/**
+ * POST assinado nas rotas /api/ia/*.
+ *
+ * @param  array<string, mixed>  $payload
+ */
+function postIa(string $rota, array $payload, ?string $assinatura = null)
+{
+    $corpo = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+    $assinatura ??= 'sha256=' . hash_hmac('sha256', (string) $corpo, (string) config('painel.ia.webhook_secret'));
+
+    return test()->call(
+        'POST',
+        $rota,
+        [],
+        [],
+        [],
+        ['CONTENT_TYPE' => 'application/json', 'HTTP_X_SIGNATURE' => $assinatura],
+        (string) $corpo,
+    );
+}

@@ -26,6 +26,28 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Área de treinamento das agentes de IA (Duda e Luna)
+    |--------------------------------------------------------------------------
+    | envio_url        -> workflow "IA ENVIO APROVADO" no n8n
+    | webhook_secret   -> HMAC das duas pontas (painel <-> n8n)
+    | fcm_*            -> push no celular para avisar pendência na fila
+    */
+
+    'ia' => [
+        'envio_url' => env('IA_ENVIO_URL'),
+        'webhook_secret' => env('IA_WEBHOOK_SECRET'),
+        'timeout' => (int) env('IA_TIMEOUT', 15),
+        'fcm_url' => env('FCM_URL'),
+        'fcm_server_key' => env('FCM_SERVER_KEY'),
+
+        // Usados só pelo `ia:importar-supabase`, na virada da base para o
+        // MySQL. Memória de conversa e echo continuam no Supabase.
+        'supabase_url' => env('SUPABASE_URL'),
+        'supabase_key' => env('SUPABASE_KEY'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Janela de horário permitido para envio de follow-up
     |--------------------------------------------------------------------------
     | Padrão 09:00–20:00, segunda a sábado. Ajustável na tela Configurações.
