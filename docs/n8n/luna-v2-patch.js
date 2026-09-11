@@ -13,6 +13,10 @@
 //     DM de espera entra na memória (senão o echo vira "humano no controle").
 //  6. Portao Comentario: busca permalink/legenda/mídia do post para o painel.
 //  7. Portao DM: usa os campos reais do nó Normalize (igId, igUsername, message, hist).
+//
+// Correção posterior (mesmo dia): em Portao Comentario, `ig_id` passou a ser
+// `ex.from_id` (quem comentou) — `ex.ig_id` é a conta da clínica.
+// Patch 2 (materiais): luna-v2-materiais-patch.js
 
 const app = document.querySelector('#app').__vue_app__;
 const pinia = app.config.globalProperties.$pinia;

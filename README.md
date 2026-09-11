@@ -61,6 +61,12 @@ painel comercial pode ser apresentado sem essa área aparecer.
   com a estrutura real (código, módulo, perguntas equivalentes, resposta
   detalhada, status validado/revisar/pendente) — pelo n8n, sem chave do
   Supabase no servidor.
+- **Materiais**: a Dra. sobe a foto ou o PDF de cada programa (ou cola o link
+  do vídeo) em Materiais, diz quando usar e marca no card do assunto o que vai
+  junto. A agente devolve os códigos na resposta, o revisor confere na fila
+  (marcado = ela escolheu) e o n8n envia: imagem como anexo, PDF/vídeo/link
+  como mensagem com o endereço. O arquivo sai por URL pública com token
+  (`/materiais/{token}/{nome}`), sem depender de `storage:link`.
 - **Instalação sem variáveis extras**: o segredo do webhook e o token do cron
   derivam da `APP_KEY` quando o `.env` não define (`SegredosDoPainel`), e a
   tela Configuração da IA mostra os valores prontos para colar. Hospedagem

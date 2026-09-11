@@ -6,6 +6,7 @@ use App\Enums\IaIntent;
 use App\Models\IaApproval;
 use App\Models\User;
 use App\Services\Ia\AprovadorDeResposta;
+use App\Services\Ia\MontadorDeContexto;
 use App\Support\AgenteSelecionado;
 use BackedEnum;
 use Filament\Notifications\Notification;
@@ -55,6 +56,9 @@ class FilaDeAprovacao extends Page
     public bool $aceite = false;
 
     public ?string $observacao = null;
+
+    /** Códigos dos materiais que vão junto (pré-marcados com a escolha da agente). */
+    public array $materiais = [];
 
     public ?string $motivoRejeicao = null;
 
@@ -107,6 +111,7 @@ class FilaDeAprovacao extends Page
         $this->itemId = $item?->id;
         $this->comentario = $item?->rascunho_comentario;
         $this->dm = $item?->rascunho_dm;
+        $this->materiais = $item !== null ? ($item->materiais ?? []) : [];
     }
 
     public function abrir(int $id): void
@@ -145,6 +150,7 @@ class FilaDeAprovacao extends Page
                 autor: $this->usuario(),
                 aceite: $this->aceite,
                 observacao: $this->observacao,
+                materiais: array_values(array_map('strval', $this->materiais)),
             );
         } catch (RuntimeException $e) {
             Notification::make()->danger()->title('Não foi possível aprovar')->body($e->getMessage())->send();
@@ -285,6 +291,23 @@ class FilaDeAprovacao extends Page
         $this->aceite = false;
         $this->observacao = null;
         $this->motivoRejeicao = null;
+        $this->materiais = [];
+    }
+
+    /**
+     * Materiais ativos da agente do item, para o revisor marcar o que vai junto.
+     *
+     * @return array<int, array{codigo: string, nome: string, tipo: string, url: ?string, quando_usar: ?string}>
+     */
+    public function materiaisDisponiveis(): array
+    {
+        $item = $this->item();
+
+        if ($item === null) {
+            return [];
+        }
+
+        return app(MontadorDeContexto::class)->materiais($item->doctor_id);
     }
 
     private function usuario(): User

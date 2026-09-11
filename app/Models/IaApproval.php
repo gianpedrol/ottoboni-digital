@@ -24,6 +24,8 @@ use Illuminate\Support\Carbon;
  * @property ?Carbon $expira_em
  * @property ?Carbon $revisado_em
  * @property ?Carbon $enviado_em
+ * @property ?array<int, string> $materiais
+ * @property ?array<int, string> $final_materiais
  * @property ?Carbon $comentario_em
  * @property ?Doctor $doctor
  */
@@ -35,7 +37,7 @@ class IaApproval extends Model
         'post_media_url', 'comment_id', 'comentario_texto', 'comentario_em',
         'mensagem_texto', 'historico',
         'rascunho_comentario', 'rascunho_dm', 'final_comentario', 'final_dm',
-        'modelo', 'prompt_version_id', 'cards_usados', 'tokens_prompt', 'tokens_resposta',
+        'modelo', 'prompt_version_id', 'cards_usados', 'materiais', 'final_materiais', 'tokens_prompt', 'tokens_resposta',
         'status', 'grau_edicao', 'similaridade', 'score',
         'revisado_por', 'revisado_em', 'observacao_humano', 'responsabilidade_aceita',
         'dm_espera_enviada', 'notificado_em', 'expira_em', 'enviado_em', 'erro',
@@ -54,6 +56,8 @@ class IaApproval extends Model
             'score' => 'float',
             'historico' => 'array',
             'cards_usados' => 'array',
+            'materiais' => 'array',
+            'final_materiais' => 'array',
             'responsabilidade_aceita' => 'boolean',
             'dm_espera_enviada' => 'boolean',
             'comentario_em' => 'datetime',

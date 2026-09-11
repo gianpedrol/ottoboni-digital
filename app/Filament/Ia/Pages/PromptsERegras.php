@@ -91,12 +91,14 @@ class PromptsERegras extends Page
             $abas[] = Tab::make($rotulo)
                 ->icon(self::ICONES[$chave])
                 ->schema([
+                    // Sem autosize: dentro de aba escondida ele calcula a altura
+                    // errada e o campo vira uma parede de espaço em branco.
                     Textarea::make("blocos.{$chave}")
                         ->label($rotulo)
                         ->hiddenLabel()
-                        ->rows($chave === 'HANDOFF_MSG' ? 4 : 14)
-                        ->autosize()
-                        ->helperText("Entra no prompt como o bloco {$chave}."),
+                        ->rows($chave === 'HANDOFF_MSG' ? 4 : 18)
+                        ->extraInputAttributes(['class' => 'resize-y', 'style' => 'max-height: 70vh'])
+                        ->helperText("Entra no prompt como o bloco {$chave}. Arraste o canto para aumentar."),
                 ]);
         }
 
@@ -113,8 +115,8 @@ class PromptsERegras extends Page
             $comentario[] = Textarea::make("blocos.{$chave}")
                 ->label($rotulo)
                 ->hiddenLabel()
-                ->rows(10)
-                ->autosize()
+                ->rows(12)
+                ->extraInputAttributes(['class' => 'resize-y', 'style' => 'max-height: 70vh'])
                 ->helperText("Entra no prompt como o bloco {$chave}. A agente não usa o texto do Direct nesse caso.");
         }
 

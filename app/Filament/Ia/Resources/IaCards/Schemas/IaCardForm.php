@@ -3,6 +3,7 @@
 namespace App\Filament\Ia\Resources\IaCards\Schemas;
 
 use App\Models\IaCard;
+use App\Models\IaMaterial;
 use App\Models\User;
 use App\Support\AgenteSelecionado;
 use Filament\Forms\Components\Select;
@@ -11,6 +12,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Auth;
 
@@ -28,6 +30,8 @@ class IaCardForm
                     Select::make('doctor_id')
                         ->label('Agente')
                         ->options(AgenteSelecionado::options($user))
+                        ->default(AgenteSelecionado::resolver($user, null))
+                        ->live()
                         ->required(),
                     Select::make('status')
                         ->label('Status')
@@ -63,6 +67,17 @@ class IaCardForm
                         ->rows(4)
                         ->columnSpanFull()
                         ->helperText('Quando usar, quando não usar, o que nunca dizer junto. A agente lê isto como instrução.'),
+                    Select::make('materiais')
+                        ->label('Materiais que vão junto')
+                        ->multiple()
+                        ->options(fn (Get $get): array => IaMaterial::query()
+                            ->where('doctor_id', (int) $get('doctor_id'))
+                            ->where('ativo', true)
+                            ->orderBy('ordem')
+                            ->pluck('nome', 'codigo')
+                            ->all())
+                        ->columnSpanFull()
+                        ->helperText('Quando a agente responder com este card, manda também estes materiais (a foto ou o PDF deste programa, por exemplo). Cadastre-os em Materiais.'),
                     TextInput::make('codigo')
                         ->label('Código')
                         ->maxLength(100)

@@ -64,6 +64,7 @@ class EnfileiradorDeRascunho
             'modelo' => $dados['modelo'] ?? $decisao->modelo,
             'prompt_version_id' => $dados['prompt_version_id'] ?? null,
             'cards_usados' => $dados['cards_usados'] ?? [],
+            'materiais' => self::codigos($dados['materiais'] ?? []),
             'tokens_prompt' => $dados['tokens_prompt'] ?? null,
             'tokens_resposta' => $dados['tokens_resposta'] ?? null,
 
@@ -119,10 +120,34 @@ class EnfileiradorDeRascunho
             'modelo' => $dados['modelo'] ?? $decisao->modelo,
             'prompt_version_id' => $dados['prompt_version_id'] ?? null,
             'cards_usados' => $dados['cards_usados'] ?? [],
+            'materiais' => self::codigos($dados['materiais'] ?? []),
+            'final_materiais' => self::codigos($dados['materiais'] ?? []),
             'status' => IaApprovalStatus::AutoEnviado,
             'enviado_em' => now(),
         ]);
 
         return $item;
+    }
+
+    /**
+     * Códigos de material como a agente devolveu: só strings, sem repetição.
+     *
+     * @return array<int, string>
+     */
+    public static function codigos(mixed $lista): array
+    {
+        if (! is_array($lista)) {
+            return [];
+        }
+
+        $codigos = [];
+
+        foreach ($lista as $c) {
+            if (is_string($c) && $c !== '' && ! in_array($c, $codigos, true)) {
+                $codigos[] = $c;
+            }
+        }
+
+        return array_slice($codigos, 0, 10);
     }
 }

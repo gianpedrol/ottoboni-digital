@@ -29,6 +29,9 @@ class AprovadorDeResposta
 {
     public function __construct(private readonly MedidorDeEdicao $medidor) {}
 
+    /**
+     * @param  array<int, string>|null  $materiais  códigos marcados pelo humano; null = os que a agente escolheu
+     */
     public function aprovar(
         IaApproval $item,
         ?string $comentario,
@@ -37,6 +40,7 @@ class AprovadorDeResposta
         bool $aceite,
         ?string $observacao = null,
         bool $virarExemplo = true,
+        ?array $materiais = null,
     ): IaApproval {
         if (! $aceite) {
             throw new RuntimeException('É obrigatório aceitar a responsabilidade pela resposta enviada.');
@@ -61,11 +65,17 @@ class AprovadorDeResposta
             trim((string) $finalComentario.' '.(string) $finalDm),
         );
 
-        DB::transaction(function () use ($item, $finalComentario, $finalDm, $autor, $observacao, $medida, $virarExemplo): void {
+        // null = manda o que a agente escolheu; lista = o que o humano deixou marcado.
+        $finalMateriais = $materiais === null
+            ? ($item->materiais ?? [])
+            : EnfileiradorDeRascunho::codigos($materiais);
+
+        DB::transaction(function () use ($item, $finalComentario, $finalDm, $finalMateriais, $autor, $observacao, $medida, $virarExemplo): void {
             $item->update([
                 'status' => IaApprovalStatus::Aprovado,
                 'final_comentario' => $finalComentario,
                 'final_dm' => $finalDm,
+                'final_materiais' => $finalMateriais,
                 'grau_edicao' => $medida['grau'],
                 'similaridade' => $medida['similaridade'],
                 'score' => $medida['score'],

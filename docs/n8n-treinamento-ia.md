@@ -51,7 +51,8 @@ Resposta (campos que interessam):
 | `guardrails` | as regras que não se negociam, em lista |
 | `exemplos` | few-shot aprovado pela equipe: `{pergunta, resposta, evitar}` |
 | `cards` | base de conhecimento: `{id, codigo, modulo, categoria, pergunta, perguntas_equivalentes, resposta, resposta_detalhada, status, tags}` |
-| `cards_texto` | o bloco "CARDS OFICIAIS…" **no formato exato** que o fluxo já montava a partir do Supabase — o n8n só troca a fonte |
+| `cards_texto` | o bloco "CARDS OFICIAIS…" **no formato exato** que o fluxo já montava a partir do Supabase — o n8n só troca a fonte; cada card traz "Materiais para enviar junto" |
+| `materiais` | o que a agente pode mandar: `{codigo, nome, tipo, url, quando_usar}`; o `system_prompt` ganha o bloco "MATERIAIS QUE VOCÊ PODE ENVIAR" e a IA devolve os códigos em `materiais` na saída |
 | `modelo` | o modelo que a agente deve usar |
 | `prompt_version_id` | manda de volta no `/rascunho` para rastrear qual versão gerou o texto |
 
@@ -86,6 +87,7 @@ chamada à Graph API.
   "modelo": "gpt-4.1",
   "prompt_version_id": 7,
   "cards_usados": [4, 11],
+  "materiais": ["raiz_foto"],
   "tokens_prompt": 1840,
   "tokens_resposta": 96
 }
@@ -206,6 +208,10 @@ trecho substituído está lá, com o motivo. Resumo:
   do nó Normalize (`igId`, `igUsername`, `message`, `hist`).
 - **DM de espera** (nos dois canais) entra na memória; no Direct, o rascunho
   segurado sai da memória — o `Parse AI` grava o histórico antes do portão.
+- **Materiais** ([n8n/luna-v2-materiais-patch.js](n8n/luna-v2-materiais-patch.js)):
+  a IA devolve `materiais` (códigos) na saída, o portão manda ao painel, o
+  revisor confere na fila; no modo automático os nós "Envia Materiais" mandam
+  imagem como anexo e o resto como link (Instagram não aceita PDF anexado).
 
 Sobra do passado que não foi mexida: o nó **CONFIG Meta** carrega uma
 PERSONA/BASE do Dr. Ottoboni que nenhum nó lê. Limpar quando der.

@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property ?array<int, string> $perguntas_equivalentes
  * @property string $resposta
  * @property ?string $resposta_detalhada
+ * @property ?array<int, string> $materiais
  * @property ?array<int, string> $tags
  * @property string $status
  * @property string $origem
@@ -38,7 +39,7 @@ class IaCard extends Model
 
     protected $fillable = [
         'doctor_id', 'codigo', 'modulo', 'categoria',
-        'pergunta', 'perguntas_equivalentes', 'resposta', 'resposta_detalhada',
+        'pergunta', 'perguntas_equivalentes', 'resposta', 'resposta_detalhada', 'materiais',
         'tags', 'status', 'origem', 'approval_id', 'ativo', 'criado_por',
     ];
 
@@ -47,6 +48,7 @@ class IaCard extends Model
         return [
             'tags' => 'array',
             'perguntas_equivalentes' => 'array',
+            'materiais' => 'array',
             'ativo' => 'boolean',
         ];
     }

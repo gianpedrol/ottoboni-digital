@@ -8,6 +8,7 @@ use App\Models\IaCard;
 use App\Models\IaExample;
 use App\Models\IaGateSetting;
 use App\Models\IaGuardrail;
+use App\Models\IaMaterial;
 use App\Models\IaPromptVersion;
 use App\Models\IaTrigger;
 use Illuminate\Database\Eloquent\Collection;
@@ -48,6 +49,7 @@ class MontadorDeContexto
 
         $guardrails = IaGuardrail::paraAgente($doctor->id);
         $cards = $this->cardsAtivos($doctor->id);
+        $materiais = $this->materiais($doctor->id);
 
         return [
             'agente' => $doctor->agente,
@@ -59,10 +61,11 @@ class MontadorDeContexto
             'prompt_revisado' => (bool) $versao?->aceite_responsabilidade,
             'blocos' => $versao->blocos ?? [],
             'guardrails' => $guardrails,
-            'system_prompt' => $this->systemPrompt($versao, $guardrails, $doctor, $canal),
+            'system_prompt' => $this->systemPrompt($versao, $guardrails, $doctor, $canal, $materiais),
             'exemplos' => $this->exemplos($doctor->id, $intent),
             'cards' => $this->cards($cards),
-            'cards_texto' => $this->cardsTexto($cards),
+            'cards_texto' => $this->cardsTexto($cards, $materiais),
+            'materiais' => $materiais,
             'gatilhos' => $this->gatilhos($doctor->id),
         ];
     }
@@ -72,8 +75,9 @@ class MontadorDeContexto
      * exemplos aprovados e, por último, as regras inegociáveis.
      *
      * @param  array<int, string>  $guardrails
+     * @param  array<int, array{codigo: string, nome: string, tipo: string, url: ?string, quando_usar: ?string}>  $materiais
      */
-    public function systemPrompt(?IaPromptVersion $versao, array $guardrails, Doctor $doctor, string $canal = 'direct'): string
+    public function systemPrompt(?IaPromptVersion $versao, array $guardrails, Doctor $doctor, string $canal = 'direct', array $materiais = []): string
     {
         $partes = [];
         $blocosDoCanal = IaPromptVersion::blocosDoCanal($canal);
@@ -86,6 +90,10 @@ class MontadorDeContexto
             }
 
             $partes[] = "### {$titulo}\n".trim((string) $texto);
+        }
+
+        if ($materiais !== []) {
+            $partes[] = $this->blocoDeMateriais($materiais);
         }
 
         if ($guardrails !== []) {
@@ -132,6 +140,46 @@ class MontadorDeContexto
     }
 
     /**
+     * Os materiais no prompt: a agente escolhe pelo código e devolve no campo
+     * `materiais` da saída; quem anexa é o n8n, depois da aprovação.
+     *
+     * @param  array<int, array{codigo: string, nome: string, tipo: string, url: ?string, quando_usar: ?string}>  $materiais
+     */
+    private function blocoDeMateriais(array $materiais): string
+    {
+        $linhas = [];
+
+        foreach ($materiais as $m) {
+            $como = $m['tipo'] === 'imagem' ? 'imagem, vai como anexo' : 'vai como link na mensagem';
+            $linhas[] = "- [{$m['codigo']}] {$m['nome']} ({$como})"
+                .(filled($m['quando_usar']) ? " — quando usar: {$m['quando_usar']}" : '');
+        }
+
+        return "### MATERIAIS QUE VOCÊ PODE ENVIAR\n"
+            .'Quando um destes couber na resposta, coloque o código dele na lista `materiais` do JSON de saída, além do texto. '
+            .'Mande só o material do assunto que a pessoa perguntou (o card indica qual vai junto). '
+            ."Só existem estes; nunca invente link, nunca prometa material que não está aqui e nunca escreva o endereço no texto: o envio é automático.\n"
+            .implode("\n", $linhas);
+    }
+
+    /**
+     * @return array<int, array{codigo: string, nome: string, tipo: string, url: ?string, quando_usar: ?string}>
+     */
+    public function materiais(int $doctorId): array
+    {
+        return IaMaterial::query()
+            ->where('doctor_id', $doctorId)
+            ->where('ativo', true)
+            ->orderBy('ordem')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (IaMaterial $m): array => $m->paraAgente())
+            ->filter(fn (array $m): bool => $m['url'] !== null)
+            ->values()
+            ->all();
+    }
+
+    /**
      * @return Collection<int, IaCard>
      */
     private function cardsAtivos(int $doctorId): Collection
@@ -174,9 +222,16 @@ class MontadorDeContexto
      * partir do Supabase — assim o n8n só troca a fonte, sem mudar o prompt.
      *
      * @param  Collection<int, IaCard>  $cards
+     * @param  array<int, array{codigo: string, nome: string, tipo: string, url: ?string, quando_usar: ?string}>  $materiais
      */
-    public function cardsTexto(Collection $cards): string
+    public function cardsTexto(Collection $cards, array $materiais = []): string
     {
+        $nomes = [];
+
+        foreach ($materiais as $m) {
+            $nomes[$m['codigo']] = $m['nome'];
+        }
+
         $uso = $cards->filter(fn (IaCard $c): bool => $c->usavel());
         $pendentes = $cards->filter(fn (IaCard $c): bool => $c->status === 'pendente');
 
@@ -191,6 +246,7 @@ class MontadorDeContexto
                 ."\nPerguntas tipicas: ".implode(' | ', $c->perguntas())
                 ."\nResposta oficial: ".$c->resposta
                 .(filled($c->resposta_detalhada) ? "\nDetalhe e regra de uso: ".$c->resposta_detalhada : '')
+                .$this->linhaDeMateriais($c, $nomes)
                 ."\n";
         }
 
@@ -204,6 +260,24 @@ class MontadorDeContexto
         }
 
         return $txt;
+    }
+
+    /**
+     * "Materiais para enviar junto" do card — só os que existem e estão ativos.
+     *
+     * @param  array<string, string>  $nomes  codigo => nome dos materiais ativos
+     */
+    private function linhaDeMateriais(IaCard $c, array $nomes): string
+    {
+        $itens = [];
+
+        foreach ($c->materiais ?? [] as $codigo) {
+            if (isset($nomes[$codigo])) {
+                $itens[] = "[{$codigo}] {$nomes[$codigo]}";
+            }
+        }
+
+        return $itens === [] ? '' : "\nMateriais para enviar junto: ".implode(', ', $itens);
     }
 
     /**

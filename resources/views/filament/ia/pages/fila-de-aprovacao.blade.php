@@ -239,6 +239,35 @@
                                 </x-filament::input.wrapper>
                             </div>
 
+                            @php $materiaisDisponiveis = $this->materiaisDisponiveis(); @endphp
+                            @if ($materiaisDisponiveis !== [])
+                                <div>
+                                    <p class="mb-1.5 text-sm font-medium text-gray-950">
+                                        Vai junto com o direct
+                                        <span class="font-normal text-gray-500">— marcado = a agente escolheu; desmarque o que não cabe</span>
+                                    </p>
+                                    <div class="grid gap-2 sm:grid-cols-2">
+                                        @foreach ($materiaisDisponiveis as $m)
+                                            <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-gray-200 p-3 text-sm transition has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50">
+                                                <x-filament::input.checkbox wire:model="materiais" value="{{ $m['codigo'] }}" class="mt-0.5" />
+                                                <span class="min-w-0">
+                                                    <span class="block font-medium text-gray-950">{{ $m['nome'] }}</span>
+                                                    <span class="block text-xs text-gray-500">
+                                                        {{ $m['tipo'] === 'imagem' ? 'imagem, vai como anexo' : 'vai como link' }}
+                                                        @if (filled($m['quando_usar']))
+                                                            — {{ $m['quando_usar'] }}
+                                                        @endif
+                                                    </span>
+                                                    @if ($m['url'])
+                                                        <a href="{{ $m['url'] }}" target="_blank" rel="noopener" class="text-xs font-medium text-primary-600 hover:underline">ver</a>
+                                                    @endif
+                                                </span>
+                                            </label>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
+
                             <div>
                                 <label for="campo-obs" class="mb-1.5 block text-sm font-medium text-gray-950">
                                     Observação para o histórico

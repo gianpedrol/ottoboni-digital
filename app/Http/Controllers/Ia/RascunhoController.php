@@ -49,6 +49,8 @@ class RascunhoController extends Controller
             'modelo' => ['nullable', 'string', 'max:60'],
             'prompt_version_id' => ['nullable', 'integer'],
             'cards_usados' => ['nullable', 'array'],
+            'materiais' => ['nullable', 'array', 'max:10'],
+            'materiais.*' => ['string', 'max:60'],
             'tokens_prompt' => ['nullable', 'integer'],
             'tokens_resposta' => ['nullable', 'integer'],
 
