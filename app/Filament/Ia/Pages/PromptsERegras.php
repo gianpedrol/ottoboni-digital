@@ -12,8 +12,11 @@ use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
+use Filament\Pages\Concerns\HasUnsavedDataChangesAlert;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Collection;
@@ -37,6 +40,19 @@ use UnitEnum;
  */
 class PromptsERegras extends Page
 {
+    use HasUnsavedDataChangesAlert;
+
+    /** Um ícone por bloco, para achar a aba de olho. */
+    private const ICONES = [
+        'PERSONA' => Heroicon::OutlinedUserCircle,
+        'ESCRITA' => Heroicon::OutlinedPencilSquare,
+        'BASE' => Heroicon::OutlinedBuildingOffice2,
+        'MODOS' => Heroicon::OutlinedArrowsRightLeft,
+        'PROCEDIMENTOS' => Heroicon::OutlinedClipboardDocumentList,
+        'ATENCAO' => Heroicon::OutlinedExclamationTriangle,
+        'HANDOFF_MSG' => Heroicon::OutlinedUserGroup,
+    ];
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;
 
     protected static string|UnitEnum|null $navigationGroup = 'Treinamento';
@@ -66,14 +82,21 @@ class PromptsERegras extends Page
 
     public function form(Schema $schema): Schema
     {
-        $campos = [];
+        // Uma aba por bloco: sete textareas empilhadas viravam uma rolagem
+        // sem fim, e quem edita mexe em um bloco por vez.
+        $abas = [];
 
         foreach (IaPromptVersion::BLOCOS as $chave => $rotulo) {
-            $campos[] = Textarea::make("blocos.{$chave}")
-                ->label($rotulo."  ({$chave})")
-                ->rows($chave === 'HANDOFF_MSG' ? 3 : 8)
-                ->columnSpanFull()
-                ->autosize();
+            $abas[] = Tab::make($rotulo)
+                ->icon(self::ICONES[$chave])
+                ->schema([
+                    Textarea::make("blocos.{$chave}")
+                        ->label($rotulo)
+                        ->hiddenLabel()
+                        ->rows($chave === 'HANDOFF_MSG' ? 4 : 14)
+                        ->autosize()
+                        ->helperText("Entra no prompt como o bloco {$chave}."),
+                ]);
         }
 
         return $schema
@@ -81,23 +104,29 @@ class PromptsERegras extends Page
             ->components([
                 Section::make('Instruções da agente')
                     ->description('Isto vira o system prompt. As regras inegociáveis são adicionadas automaticamente no fim e prevalecem sobre o que estiver escrito aqui.')
-                    ->schema($campos),
+                    ->icon(Heroicon::OutlinedSparkles)
+                    ->schema([
+                        Tabs::make('Blocos')
+                            ->tabs($abas)
+                            ->contained(false)
+                            ->persistTabInQueryString('bloco'),
+                    ]),
 
                 Section::make('Publicação')
                     ->description('Cada publicação cria uma versão nova, registrada com seu nome.')
+                    ->icon(Heroicon::OutlinedRocketLaunch)
                     ->schema([
                         TextInput::make('motivo')
                             ->label('O que você mudou e por quê')
+                            ->placeholder('Ex.: a agente estava oferecendo o Raiz para quem pediu o Pleno')
                             ->required()
                             ->maxLength(255)
                             ->helperText('Fica no histórico. É o que permite descobrir depois qual alteração piorou a agente.'),
                         Checkbox::make('aceite')
                             ->label(PublicadorDePrompt::TEXTO_ACEITE)
                             ->required()
-                            ->accepted()
-                            ->columnSpanFull(),
-                    ])
-                    ->columns(1),
+                            ->accepted(),
+                    ]),
             ]);
     }
 
@@ -202,6 +231,8 @@ class PromptsERegras extends Page
             'motivo' => null,
             'aceite' => false,
         ]);
+
+        $this->rememberData();
     }
 
     private function usuario(): User

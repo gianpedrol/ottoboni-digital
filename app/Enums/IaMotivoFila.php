@@ -2,13 +2,14 @@
 
 namespace App\Enums;
 
+use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasLabel;
 
 /**
  * Por que este item precisou de humano. Aparece no card da fila para a
  * pessoa entender em 1 segundo o que está olhando.
  */
-enum IaMotivoFila: string implements HasLabel
+enum IaMotivoFila: string implements HasColor, HasLabel
 {
     case ModoTreinamento = 'modo_treinamento';
     case NaoSei = 'nao_sei';

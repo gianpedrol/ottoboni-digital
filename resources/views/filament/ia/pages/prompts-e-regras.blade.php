@@ -1,101 +1,131 @@
+@php
+    use Filament\Support\Icons\Heroicon;
+@endphp
+
 <x-filament-panels::page>
     @php
         $ativa = $this->versaoAtiva();
+        $historico = $this->historico();
     @endphp
 
-    <div class="flex flex-wrap items-center justify-between gap-4">
-        <div class="flex items-center gap-2">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
             @if ($ativa)
-                <x-filament::badge color="success" size="lg">Versão {{ $ativa->versao }} no ar</x-filament::badge>
-                <span class="text-sm text-gray-500 dark:text-gray-400">
-                    publicada por {{ $ativa->autor?->name ?? '—' }}
+                <x-filament::badge color="success" size="lg" :icon="Heroicon::OutlinedSignal">
+                    Versão {{ $ativa->versao }} no ar
+                </x-filament::badge>
+                <span class="text-sm text-gray-500">
+                    publicada por <span class="font-medium text-gray-700">{{ $ativa->autor?->name ?? '—' }}</span>
                     {{ $ativa->created_at?->diffForHumans() }}
                 </span>
             @else
-                <x-filament::badge color="danger" size="lg">Nenhuma versão publicada</x-filament::badge>
-                <span class="text-sm text-gray-500 dark:text-gray-400">
+                <x-filament::badge color="danger" size="lg" :icon="Heroicon::OutlinedExclamationTriangle">
+                    Nenhuma versão publicada
+                </x-filament::badge>
+                <span class="text-sm text-gray-500">
                     Enquanto não houver instruções publicadas, a agente escala tudo para a equipe.
                 </span>
             @endif
         </div>
 
-        @if (count($this->agentes()) > 1)
-            <select
-                wire:model.live="doctorId"
-                class="fi-input block w-64 rounded-lg border-gray-300 text-sm shadow-sm dark:border-white/10 dark:bg-white/5"
-            >
-                @foreach ($this->agentes() as $id => $rotulo)
-                    <option value="{{ $id }}">{{ $rotulo }}</option>
-                @endforeach
-            </select>
-        @endif
+        @include('filament.ia.partials.seletor-agente', ['agentes' => $this->agentes()])
     </div>
 
-    {{-- Regras travadas: aparecem para consulta, sem campo de edição. --}}
-    <x-filament::section collapsible>
-        <x-slot name="heading">
-            <span class="inline-flex items-center gap-2">
-                <x-filament::icon :icon="\Filament\Support\Icons\Heroicon::OutlinedLockClosed" class="h-4 w-4" />
-                Regras inegociáveis
-            </span>
-        </x-slot>
+    <div class="grid grid-cols-1 items-start gap-6 xl:grid-cols-3">
+        {{-- ---------- Edição ---------- --}}
+        <form wire:submit="publicar" class="space-y-6 xl:col-span-2">
+            {{ $this->form }}
 
-        <x-slot name="description">
-            Não são editáveis por aqui — vão sempre no fim do prompt e prevalecem sobre qualquer
-            instrução escrita abaixo. Mudança nelas é decisão clínica e passa por quem mantém o sistema.
-        </x-slot>
+            <div class="flex flex-wrap items-center gap-3">
+                <x-filament::button type="submit" :icon="Heroicon::OutlinedRocketLaunch" wire:target="publicar">
+                    Publicar nova versão
+                </x-filament::button>
+                <span class="text-sm text-gray-500">
+                    A versão atual continua valendo até a publicação terminar.
+                </span>
+            </div>
+        </form>
 
-        <ol class="list-decimal space-y-1 pl-5 text-sm text-gray-500 dark:text-gray-400">
-            @forelse ($this->guardrails() as $regra)
-                <li>{{ $regra }}</li>
-            @empty
-                <li class="list-none text-danger-600">
-                    Nenhuma regra cadastrada. Rode <code>php artisan db:seed --class=IaGuardrailSeeder</code>.
-                </li>
-            @endforelse
-        </ol>
-    </x-filament::section>
+        {{-- ---------- Consulta ---------- --}}
+        <div class="space-y-6">
+            {{-- Regras travadas: aparecem para consulta, sem campo de edição. --}}
+            <x-filament::section
+                heading="Regras inegociáveis"
+                :icon="Heroicon::OutlinedLockClosed"
+                compact
+                collapsible
+            >
+                <x-slot name="description">
+                    Vão sempre no fim do prompt e prevalecem sobre qualquer instrução ao lado. Mudança
+                    nelas é decisão clínica e passa por quem mantém o sistema.
+                </x-slot>
 
-    <form wire:submit="publicar">
-        {{ $this->form }}
+                @php $regras = $this->guardrails(); @endphp
 
-        <div class="mt-4 flex items-center gap-3">
-            <x-filament::button type="submit" icon="heroicon-o-rocket-launch">
-                Publicar nova versão
-            </x-filament::button>
-            <span class="text-sm text-gray-500 dark:text-gray-400">
-                A versão atual continua valendo até a publicação terminar.
-            </span>
+                @if ($regras === [])
+                    <p class="text-sm text-danger-600">
+                        Nenhuma regra cadastrada. Rode
+                        <code class="rounded bg-danger-50 px-1 font-mono text-xs">php artisan db:seed --class=IaGuardrailSeeder</code>.
+                    </p>
+                @else
+                    <ol class="space-y-2 text-sm text-gray-600">
+                        @foreach ($regras as $regra)
+                            <li class="flex gap-2.5">
+                                <span class="mt-px inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-medium tabular-nums text-gray-500">
+                                    {{ $loop->iteration }}
+                                </span>
+                                <span>{{ $regra }}</span>
+                            </li>
+                        @endforeach
+                    </ol>
+                @endif
+            </x-filament::section>
+
+            <x-filament::section heading="Histórico de versões" :icon="Heroicon::OutlinedClock" compact>
+                @if ($historico->isEmpty())
+                    <p class="text-sm text-gray-500">Nenhuma versão publicada ainda.</p>
+                @else
+                    <ol class="relative ms-1.5 space-y-5 border-s border-gray-200">
+                        @foreach ($historico as $versao)
+                            <li class="relative ps-5">
+                                <span @class([
+                                    'absolute -start-[5px] top-1.5 h-2.5 w-2.5 rounded-full ring-4 ring-white',
+                                    'bg-success-500' => $versao->ativo,
+                                    'bg-gray-300' => ! $versao->ativo,
+                                ])></span>
+
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span class="text-sm font-semibold text-gray-950">v{{ $versao->versao }}</span>
+                                    @if ($versao->ativo)
+                                        <x-filament::badge color="success" size="sm">no ar</x-filament::badge>
+                                    @endif
+                                </div>
+
+                                <p class="mt-0.5 text-sm text-gray-700">
+                                    {{ $versao->motivo ?? 'sem motivo registrado' }}
+                                </p>
+                                <p class="text-xs text-gray-500">
+                                    {{ $versao->autor?->name ?? '—' }} · {{ $versao->created_at?->format('d/m/Y H:i') }}
+                                </p>
+
+                                @unless ($versao->ativo)
+                                    <x-filament::link
+                                        tag="button"
+                                        size="sm"
+                                        color="gray"
+                                        :icon="Heroicon::OutlinedArrowUturnLeft"
+                                        class="mt-1"
+                                        wire:click="reverter({{ $versao->id }})"
+                                        wire:confirm="Republicar as instruções da versão {{ $versao->versao }}? Isso cria uma versão nova com o mesmo conteúdo."
+                                    >
+                                        Voltar para esta
+                                    </x-filament::link>
+                                @endunless
+                            </li>
+                        @endforeach
+                    </ol>
+                @endif
+            </x-filament::section>
         </div>
-    </form>
-
-    <x-filament::section :heading="'Histórico de versões'" collapsible collapsed>
-        <div class="divide-y divide-gray-100 text-sm dark:divide-white/10">
-            @foreach ($this->historico() as $versao)
-                <div class="flex flex-wrap items-center gap-3 py-2">
-                    <x-filament::badge :color="$versao->ativo ? 'success' : 'gray'">
-                        v{{ $versao->versao }}
-                    </x-filament::badge>
-                    <span class="flex-1">
-                        {{ $versao->motivo ?? 'sem motivo registrado' }}
-                        <span class="text-gray-400">
-                            — {{ $versao->autor?->name ?? '—' }},
-                            {{ $versao->created_at?->format('d/m/Y H:i') }}
-                        </span>
-                    </span>
-
-                    @unless ($versao->ativo)
-                        <x-filament::button
-                            size="xs"
-                            color="gray"
-                            wire:click="reverter({{ $versao->id }})"
-                            wire:confirm="Republicar as instruções da versão {{ $versao->versao }}? Isso cria uma versão nova com o mesmo conteúdo."
-                        >
-                            Voltar para esta
-                        </x-filament::button>
-                    @endunless
-                </div>
-            @endforeach
-        </div>
-    </x-filament::section>
+    </div>
 </x-filament-panels::page>

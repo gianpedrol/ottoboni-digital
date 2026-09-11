@@ -2,13 +2,14 @@
 
 namespace App\Enums;
 
+use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasLabel;
 
 /**
  * O quanto o humano precisou mexer no rascunho. É daqui que sai a acurácia:
  * não é a IA se avaliando, é o trabalho que ela deu.
  */
-enum IaGrauEdicao: string implements HasLabel
+enum IaGrauEdicao: string implements HasColor, HasLabel
 {
     case SemEdicao = 'sem_edicao';
     case Leve = 'leve';

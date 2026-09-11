@@ -13,6 +13,13 @@ use Illuminate\Support\Facades\Auth;
 
 class IaTriggerForm
 {
+    /** Também usados como rótulo na tabela. */
+    public const TIPOS = [
+        'palavra_chave' => 'Palavra-chave',
+        'frase' => 'Frase exata',
+        'regex' => 'Expressão regular',
+    ];
+
     public static function configure(Schema $schema): Schema
     {
         /** @var User $user */
@@ -28,11 +35,7 @@ class IaTriggerForm
                         ->required(),
                     Select::make('tipo')
                         ->label('Tipo')
-                        ->options([
-                            'palavra_chave' => 'Palavra-chave',
-                            'frase' => 'Frase exata',
-                            'regex' => 'Expressão regular',
-                        ])
+                        ->options(self::TIPOS)
                         ->default('palavra_chave')
                         ->required(),
                     TextInput::make('termo')

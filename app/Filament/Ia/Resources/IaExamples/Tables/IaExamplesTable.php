@@ -6,10 +6,13 @@ use App\Enums\IaIntent;
 use App\Models\IaExample;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Support\Enums\FontWeight;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Str;
 
 class IaExamplesTable
 {
@@ -22,18 +25,17 @@ class IaExamplesTable
                     ->label('Assunto')
                     ->badge(),
                 TextColumn::make('pergunta')
-                    ->label('Pergunta')
-                    ->limit(60)
-                    ->searchable()
+                    ->label('Pergunta e resposta correta')
+                    ->weight(FontWeight::Medium)
+                    ->limit(80)
+                    ->description(fn (IaExample $r): string => Str::limit($r->resposta, 140))
+                    ->tooltip(fn (IaExample $r): string => $r->resposta)
+                    ->searchable(['pergunta', 'resposta'])
                     ->wrap(),
-                TextColumn::make('resposta')
-                    ->label('Resposta correta')
-                    ->limit(60)
-                    ->wrap()
-                    ->tooltip(fn (IaExample $r): string => $r->resposta),
                 TextColumn::make('resposta_rejeitada')
                     ->label('Contra-exemplo')
                     ->limit(40)
+                    ->color('danger')
                     ->placeholder('—')
                     ->toggleable(),
                 TextColumn::make('prioridade')
@@ -56,6 +58,9 @@ class IaExamplesTable
             ->recordActions([
                 EditAction::make(),
                 DeleteAction::make(),
-            ]);
+            ])
+            ->emptyStateIcon(Heroicon::OutlinedAcademicCap)
+            ->emptyStateHeading('Nenhum exemplo ainda')
+            ->emptyStateDescription('Eles nascem sozinhos quando alguém corrige uma resposta na fila de aprovação. Cadastre à mão só o que você quer ensinar antes de acontecer.');
     }
 }

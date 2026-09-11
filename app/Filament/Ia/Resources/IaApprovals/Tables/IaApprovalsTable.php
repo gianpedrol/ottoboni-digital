@@ -8,6 +8,7 @@ use App\Enums\IaGrauEdicao;
 use App\Enums\IaIntent;
 use App\Models\IaApproval;
 use Filament\Actions\ViewAction;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
@@ -94,6 +95,9 @@ class IaApprovalsTable
                 ViewAction::make()
                     ->modalHeading('Revisão')
                     ->modalWidth('3xl'),
-            ]);
+            ])
+            ->emptyStateIcon(Heroicon::OutlinedClock)
+            ->emptyStateHeading('Nada revisado ainda')
+            ->emptyStateDescription('Tudo que a agente responder ou quiser responder aparece aqui, com quem aprovou e quanto precisou editar.');
     }
 }

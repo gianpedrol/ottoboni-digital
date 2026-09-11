@@ -2,13 +2,14 @@
 
 namespace App\Enums;
 
+use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasLabel;
 
 /**
  * A regra dos 3 caminhos combinada com a Dra. Vanessa, mais o "não sei".
  * TesteGenetico e Consulta são os únicos que podem ser liberados por acurácia.
  */
-enum IaIntent: string implements HasLabel
+enum IaIntent: string implements HasColor, HasLabel
 {
     case TesteGenetico = 'teste_genetico';
     case Consulta = 'consulta';

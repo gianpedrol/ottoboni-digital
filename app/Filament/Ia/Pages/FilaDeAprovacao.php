@@ -22,7 +22,7 @@ use UnitEnum;
  *
  * Um item de cada vez, e não 20 formulários na mesma página — com fila cheia
  * o que importa é a velocidade de decidir, e por isso existem os atalhos de
- * teclado (A aprova, R rejeita, S pula).
+ * teclado (A aprova, R rejeita, S pula, E edita o direct).
  *
  * Nada sai para o Instagram por esta tela diretamente: aprovar grava a
  * decisão e o envio real é feito pelo n8n, que devolve o resultado no
@@ -61,6 +61,9 @@ class FilaDeAprovacao extends Page
     /** @var array<int, int> Itens que o revisor pulou nesta sessão. */
     public array $pulados = [];
 
+    /** Aprovados e rejeitados desde que a tela abriu — só para dar ritmo. */
+    public int $revisadosNaSessao = 0;
+
     public static function getNavigationBadge(): ?string
     {
         $total = self::baseQuery()->pendentes()->count();
@@ -91,11 +94,6 @@ class FilaDeAprovacao extends Page
         $this->carregarProximo();
     }
 
-    /**
-     * Ordem da fila: o que a agente não soube responder primeiro, depois o que
-     * passou do prazo, depois por ordem de chegada. Comentário no Instagram
-     * esfria rápido — deixar o mais antigo para o fim seria perder o lead.
-     */
     public function carregarProximo(?int $forcarId = null): void
     {
         $this->resetarCampos();
@@ -104,12 +102,7 @@ class FilaDeAprovacao extends Page
 
         $item = $forcarId !== null
             ? (clone $query)->whereKey($forcarId)->first()
-            : $query
-                ->whereNotIn('id', $this->pulados)
-                ->orderByRaw('CASE WHEN intent = ? THEN 0 ELSE 1 END', [IaIntent::NaoSei->value])
-                ->orderByRaw('CASE WHEN expira_em IS NOT NULL AND expira_em < ? THEN 0 ELSE 1 END', [now()])
-                ->orderBy('created_at')
-                ->first();
+            : $this->ordenar($query->whereNotIn('id', $this->pulados))->first();
 
         $this->itemId = $item?->id;
         $this->comentario = $item?->rascunho_comentario;
@@ -127,6 +120,12 @@ class FilaDeAprovacao extends Page
             $this->pulados[] = $this->itemId;
         }
 
+        $this->carregarProximo();
+    }
+
+    public function reverPulados(): void
+    {
+        $this->pulados = [];
         $this->carregarProximo();
     }
 
@@ -159,6 +158,7 @@ class FilaDeAprovacao extends Page
             ->body('A resposta foi para a fila de envio. O status muda para "enviado" quando o n8n confirmar.')
             ->send();
 
+        $this->revisadosNaSessao++;
         $this->carregarProximo();
     }
 
@@ -194,6 +194,8 @@ class FilaDeAprovacao extends Page
             ->body('Nada foi enviado. O item conta como erro na acurácia.')
             ->send();
 
+        $this->revisadosNaSessao++;
+        $this->dispatch('close-modal', id: 'rejeitar');
         $this->carregarProximo();
     }
 
@@ -209,9 +211,7 @@ class FilaDeAprovacao extends Page
     /** @return Collection<int, IaApproval> */
     public function fila(): Collection
     {
-        return $this->filaQuery()
-            ->orderByRaw('CASE WHEN intent = ? THEN 0 ELSE 1 END', [IaIntent::NaoSei->value])
-            ->orderBy('created_at')
+        return $this->ordenar($this->filaQuery())
             ->limit(50)
             ->get();
     }
@@ -245,6 +245,24 @@ class FilaDeAprovacao extends Page
             ->pendentes()
             ->whereIn('doctor_id', AgenteSelecionado::permitidos($this->usuario()))
             ->when($this->doctorId !== null, fn (Builder $q) => $q->where('doctor_id', $this->doctorId));
+    }
+
+    /**
+     * Ordem da fila: o que a agente não soube responder primeiro, depois o que
+     * passou do prazo, depois por ordem de chegada. Comentário no Instagram
+     * esfria rápido — deixar o mais antigo para o fim seria perder o lead.
+     *
+     * A lista lateral usa a mesma ordem, então "o próximo" é sempre o de cima.
+     *
+     * @param  Builder<IaApproval>  $query
+     * @return Builder<IaApproval>
+     */
+    private function ordenar(Builder $query): Builder
+    {
+        return $query
+            ->orderByRaw('CASE WHEN intent = ? THEN 0 ELSE 1 END', [IaIntent::NaoSei->value])
+            ->orderByRaw('CASE WHEN expira_em IS NOT NULL AND expira_em < ? THEN 0 ELSE 1 END', [now()])
+            ->orderBy('created_at');
     }
 
     /**

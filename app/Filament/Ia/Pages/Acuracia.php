@@ -94,7 +94,11 @@ class Acuracia extends Page
             'sem_edicao' => $itens->filter(fn (IaApproval $i): bool => $i->grau_edicao?->value === 'sem_edicao')->count(),
             'leve' => $itens->filter(fn (IaApproval $i): bool => $i->grau_edicao?->value === 'leve')->count(),
             'media' => $itens->filter(fn (IaApproval $i): bool => $i->grau_edicao?->value === 'media')->count(),
-            'refeita' => $itens->filter(fn (IaApproval $i): bool => $i->grau_edicao?->value === 'refeita')->count(),
+            // Rejeitar também grava grau "refeita" (nota 0); aqui a rejeição
+            // conta só na linha dela, senão aparece duas vezes no gráfico.
+            'refeita' => $itens->filter(
+                fn (IaApproval $i): bool => $i->grau_edicao?->value === 'refeita' && $i->status !== IaApprovalStatus::Rejeitado
+            )->count(),
             'rejeitadas' => $itens->where('status', IaApprovalStatus::Rejeitado)->count(),
         ];
     }

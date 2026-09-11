@@ -33,15 +33,25 @@ class IaPanelProvider extends PanelProvider
             ->id('ia')
             ->path('ia')
             ->login()
+            // Mesmo tema do /painel: as views da IA usam utilitários do Tailwind,
+            // e o CSS pré-compilado do Filament não traz nenhum deles.
+            ->viteTheme('resources/css/filament/admin/theme.css')
             ->brandName('Treinamento das IAs')
             ->multiFactorAuthentication([
                 AppAuthentication::make()->recoverable(),
             ])
             ->databaseNotifications()
             ->databaseNotificationsPolling('30s')
+            // Índigo em vez do coral: quem alterna entre os dois painéis sabe
+            // pela cor que está mexendo na IA. O resto da identidade é o mesmo.
             ->colors([
                 'primary' => Color::Indigo,
+                'gray' => Color::Stone,
             ])
+            ->font('DM Sans')
+            ->darkMode(false)
+            ->sidebarCollapsibleOnDesktop()
+            ->unsavedChangesAlerts()
             ->navigationGroups([
                 'Revisão',
                 'Treinamento',

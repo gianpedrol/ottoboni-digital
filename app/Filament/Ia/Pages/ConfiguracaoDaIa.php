@@ -11,14 +11,18 @@ use App\Services\Ia\IaWebhookClient;
 use App\Support\AgenteSelecionado;
 use BackedEnum;
 use Filament\Forms\Components\CheckboxList;
-use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
+use Filament\Pages\Concerns\HasUnsavedDataChangesAlert;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Callout;
+use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Auth;
@@ -29,13 +33,18 @@ use UnitEnum;
  *
  * O modelo aparece aqui em read-only de propósito: trocar modelo muda o custo
  * e o comportamento de todas as respostas de uma vez, é decisão técnica e não
- * de operação. O campo está no $guarded do IaGateSetting, então nem um POST
- * forjado altera.
+ * de operação. O campo está fora do $fillable do IaGateSetting, então nem um
+ * POST forjado altera.
+ *
+ * As acurácias ficam gravadas de 0 a 1, mas a tela mostra em % — ninguém da
+ * equipe pensa em "0.90".
  *
  * @property-read Schema $form
  */
 class ConfiguracaoDaIa extends Page
 {
+    use HasUnsavedDataChangesAlert;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedAdjustmentsHorizontal;
 
     protected static string|UnitEnum|null $navigationGroup = 'Configuração';
@@ -78,57 +87,76 @@ class ConfiguracaoDaIa extends Page
             ->components([
                 Section::make('Portão de aprovação')
                     ->description('Quem decide se a agente pode responder sozinha.')
+                    ->icon(Heroicon::OutlinedShieldCheck)
                     ->schema([
-                        Select::make('modo')
+                        Radio::make('modo')
                             ->label('Modo')
                             ->options(IaGateModo::class)
+                            ->descriptions(collect(IaGateModo::cases())
+                                ->mapWithKeys(fn (IaGateModo $m): array => [$m->value => $m->getDescription()])
+                                ->all())
                             ->required()
-                            ->live()
-                            ->helperText('Comece em treinamento. "Automático total" ignora a acurácia e só deve ser usado com a fila vazia e alguém olhando.'),
-                        TextInput::make('limiar_acuracia')
-                            ->label('Acurácia para liberar')
-                            ->numeric()
-                            ->step(0.01)
-                            ->minValue(0.5)
-                            ->maxValue(1)
-                            ->required()
-                            ->helperText('0.90 = 90%. Abaixo disso o assunto continua na fila.'),
-                        TextInput::make('kill_switch_acuracia')
-                            ->label('Acurácia do freio de mão')
-                            ->numeric()
-                            ->step(0.01)
-                            ->minValue(0.5)
-                            ->maxValue(1)
-                            ->required()
-                            ->helperText('Se a nota geral cair abaixo disso, tudo volta para a fila automaticamente.'),
-                        TextInput::make('min_amostras')
-                            ->label('Mínimo de revisões por assunto')
-                            ->numeric()
-                            ->minValue(5)
-                            ->required()
-                            ->helperText('Ninguém libera uma agente com 3 acertos de sorte.'),
-                        TextInput::make('janela')
-                            ->label('Tamanho da janela')
-                            ->numeric()
-                            ->minValue(10)
-                            ->required()
-                            ->helperText('Quantas revisões recentes entram na conta. A nota reflete como ela está hoje, não a média histórica.'),
+                            ->live(),
+                        Callout::make('Sem rede de proteção')
+                            ->description('Neste modo nenhuma resposta passa pela equipe e a acurácia é ignorada. Volte para "Automático por acurácia" assim que terminar de acompanhar.')
+                            ->danger()
+                            ->visible(fn (Get $get): bool => self::modoEscolhido($get) === IaGateModo::AutoTotal),
+                        Fieldset::make('Critérios para liberar um assunto')
+                            ->schema([
+                                TextInput::make('limiar_acuracia')
+                                    ->label('Acurácia para liberar')
+                                    ->numeric()
+                                    ->suffix('%')
+                                    ->step(1)
+                                    ->minValue(50)
+                                    ->maxValue(100)
+                                    ->required()
+                                    ->helperText('Abaixo disso o assunto continua na fila.'),
+                                TextInput::make('kill_switch_acuracia')
+                                    ->label('Freio de mão')
+                                    ->numeric()
+                                    ->suffix('%')
+                                    ->step(1)
+                                    ->minValue(50)
+                                    ->maxValue(100)
+                                    ->lte('limiar_acuracia')
+                                    ->validationMessages([
+                                        'lte' => 'O freio de mão precisa ficar igual ou abaixo da acurácia para liberar.',
+                                    ])
+                                    ->required()
+                                    ->helperText('Se a nota geral cair abaixo disso, tudo volta para a fila automaticamente.'),
+                                TextInput::make('min_amostras')
+                                    ->label('Mínimo de revisões por assunto')
+                                    ->numeric()
+                                    ->suffix('revisões')
+                                    ->minValue(5)
+                                    ->required()
+                                    ->helperText('Ninguém libera uma agente com 3 acertos de sorte.'),
+                                TextInput::make('janela')
+                                    ->label('Tamanho da janela')
+                                    ->numeric()
+                                    ->suffix('revisões')
+                                    ->minValue(10)
+                                    ->required()
+                                    ->helperText('Quantas revisões recentes entram na conta. A nota reflete como ela está hoje, não a média histórica.'),
+                            ])
+                            ->columns(2),
                         CheckboxList::make('intents_sempre_revisa')
                             ->label('Assuntos que sempre passam por humano')
                             ->options(fn (): array => collect(IaIntent::cases())
                                 ->mapWithKeys(fn (IaIntent $i): array => [$i->value => $i->getLabel()])
                                 ->all())
                             ->columns(2)
-                            ->columnSpanFull()
                             ->helperText('Nunca são liberados por acurácia. Recomendado manter "Não sei responder" marcado: é ele que faz a base crescer.'),
-                    ])
-                    ->columns(2),
+                    ]),
 
                 Section::make('Quando ninguém aprova')
+                    ->icon(Heroicon::OutlinedClock)
                     ->schema([
                         TextInput::make('timeout_min')
-                            ->label('Prazo antes de marcar como atrasado (minutos)')
+                            ->label('Prazo antes de marcar como atrasado')
                             ->numeric()
+                            ->suffix('min')
                             ->minValue(5)
                             ->required()
                             ->helperText('Passando disso o item é destacado e volta a notificar. A agente nunca envia sozinha por causa do prazo.'),
@@ -140,12 +168,13 @@ class ConfiguracaoDaIa extends Page
                             ->label('Texto do direct de espera')
                             ->rows(3)
                             ->columnSpanFull()
-                            ->visible(fn ($get): bool => (bool) $get('dm_espera_ativa'))
+                            ->visible(fn (Get $get): bool => (bool) $get('dm_espera_ativa'))
                             ->requiredIf('dm_espera_ativa', true),
                     ])
                     ->columns(2),
 
                 Section::make('Avisos de pendência')
+                    ->icon(Heroicon::OutlinedBellAlert)
                     ->schema([
                         Toggle::make('notif_push')
                             ->label('Push no celular (FCM)')
@@ -168,12 +197,12 @@ class ConfiguracaoDaIa extends Page
         $cfg = IaGateSetting::paraAgente((int) $this->doctorId);
         $antes = $cfg->only(['modo', 'limiar_acuracia', 'min_amostras', 'intents_sempre_revisa']);
 
-        // O modelo não entra: está no $guarded do model justamente para não
+        // O modelo não entra: está fora do $fillable justamente para não
         // ser alterável por esta tela nem por request forjado.
         $cfg->update([
             'modo' => $state['modo'],
-            'limiar_acuracia' => $state['limiar_acuracia'],
-            'kill_switch_acuracia' => $state['kill_switch_acuracia'],
+            'limiar_acuracia' => self::dePorcentagem($state['limiar_acuracia']),
+            'kill_switch_acuracia' => self::dePorcentagem($state['kill_switch_acuracia']),
             'min_amostras' => $state['min_amostras'],
             'janela' => $state['janela'],
             'intents_sempre_revisa' => $state['intents_sempre_revisa'] ?: IaGateSetting::SEMPRE_REVISA_PADRAO,
@@ -191,7 +220,13 @@ class ConfiguracaoDaIa extends Page
             'depois' => $cfg->only(['modo', 'limiar_acuracia', 'min_amostras', 'intents_sempre_revisa']),
         ]);
 
-        Notification::make()->success()->title('Configuração salva')->send();
+        $this->rememberData();
+
+        Notification::make()
+            ->success()
+            ->title('Configuração salva')
+            ->body('Vale a partir da próxima resposta da agente.')
+            ->send();
     }
 
     public function config(): IaGateSetting
@@ -216,8 +251,8 @@ class ConfiguracaoDaIa extends Page
 
         $this->form->fill([
             'modo' => $cfg->modo->value,
-            'limiar_acuracia' => $cfg->limiar_acuracia,
-            'kill_switch_acuracia' => $cfg->kill_switch_acuracia,
+            'limiar_acuracia' => self::emPorcentagem($cfg->limiar_acuracia),
+            'kill_switch_acuracia' => self::emPorcentagem($cfg->kill_switch_acuracia),
             'min_amostras' => $cfg->min_amostras,
             'janela' => $cfg->janela,
             'intents_sempre_revisa' => $cfg->sempreRevisa(),
@@ -227,6 +262,26 @@ class ConfiguracaoDaIa extends Page
             'notif_push' => $cfg->notif_push,
             'notif_emails' => $cfg->notif_emails ?? [],
         ]);
+
+        $this->rememberData();
+    }
+
+    /** O Radio pode devolver o enum ou o valor cru, conforme o momento do ciclo. */
+    private static function modoEscolhido(Get $get): ?IaGateModo
+    {
+        $modo = $get('modo');
+
+        return $modo instanceof IaGateModo ? $modo : IaGateModo::tryFrom((string) $modo);
+    }
+
+    private static function emPorcentagem(float $fracao): float
+    {
+        return round($fracao * 100, 1);
+    }
+
+    private static function dePorcentagem(mixed $porcentagem): float
+    {
+        return round((float) $porcentagem / 100, 4);
     }
 
     private function usuario(): User
