@@ -81,7 +81,7 @@ class AprovadorDeResposta
                 'intent' => $item->intent->value,
                 'grau_edicao' => $medida['grau']->value,
                 'similaridade' => $medida['similaridade'],
-            ]);
+            ], $autor->id);
 
             if ($virarExemplo) {
                 $this->gravarAprendizado($item, $autor, $medida['grau']);
@@ -117,7 +117,7 @@ class AprovadorDeResposta
             'agente' => $item->doctor?->agente,
             'intent' => $item->intent->value,
             'motivo' => $motivo,
-        ]);
+        ], $autor->id);
 
         return $item->refresh();
     }

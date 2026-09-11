@@ -80,6 +80,14 @@ class IaGateSetting extends Model
             ]
         );
 
+        // firstOrCreate devolve só o que foi escrito: as colunas com DEFAULT no
+        // banco (modelo, limiar, janela...) ficam null no objeto em memória.
+        // Sem este refresh, a PRIMEIRA decisão de cada agente sai com modelo
+        // null e o portão quebra — foi exatamente o que os testes pegaram.
+        if ($setting->wasRecentlyCreated) {
+            $setting->refresh();
+        }
+
         return $setting;
     }
 

@@ -79,7 +79,7 @@ class PublicadorDePrompt
                 'versao_anterior' => $anterior?->versao,
                 'motivo' => $motivo,
                 'blocos_alterados' => $this->blocosAlterados($anterior?->blocos ?? [], $blocos),
-            ]);
+            ], $autor->id);
 
             return $versao;
         });
