@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\FollowupPlans;
 
+use App\Filament\Concerns\TituloEmPortugues;
 use App\Filament\Resources\FollowupPlans\Pages\CreateFollowupPlan;
 use App\Filament\Resources\FollowupPlans\Pages\EditFollowupPlan;
 use App\Filament\Resources\FollowupPlans\Pages\ListFollowupPlans;
@@ -19,6 +20,8 @@ use UnitEnum;
 
 class FollowupPlanResource extends Resource
 {
+    use TituloEmPortugues;
+
     protected static ?string $model = FollowupPlan::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowPathRoundedSquare;

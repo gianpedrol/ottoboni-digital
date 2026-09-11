@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\FollowupRuns;
 
+use App\Filament\Concerns\TituloEmPortugues;
 use App\Filament\Resources\FollowupRuns\Pages\ListFollowupRuns;
 use App\Filament\Resources\FollowupRuns\Tables\FollowupRunsTable;
 use App\Models\FollowupRun;
@@ -16,6 +17,8 @@ use UnitEnum;
 
 class FollowupRunResource extends Resource
 {
+    use TituloEmPortugues;
+
     protected static ?string $model = FollowupRun::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPaperAirplane;

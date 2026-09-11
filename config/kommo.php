@@ -63,7 +63,28 @@ return [
         'urgencia' => env('KOMMO_CF_URGENCIA', 'Urgência'),
         'score' => env('KOMMO_CF_SCORE', 'Score'),
         'instagram' => env('KOMMO_CF_IG', 'Instagram'),
+
+        // Fase 3 — já existem na conta (lidos em 10/09/2026)
+        'proxima_consulta' => 'Próxima consulta',
+        'comparecimento' => 'Comparecimento',
+        'status_sinal' => 'Status do sinal',
+        'valor_proposta' => 'Valor da proposta',
+        'valor_total' => 'Valor total',
+        'data_assinatura' => 'Data da assinatura',
+        'data_cirurgia' => 'Data da cirurgia',
+        'cirurgia' => 'Cirurgia',
+        'medico_responsavel' => 'Médico responsável',
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Pipeline "Fluxo cirurgias" (board de cirurgias)
+    |--------------------------------------------------------------------------
+    | Fora de 'pipelines' de propósito: aquela lista define o escopo de
+    | leitura dos usuários (User::allowedPipelineIds).
+    */
+
+    'pipeline_cirurgias' => (int) env('CIRURGIAS_PIPELINE_ID', 11380984),
 
     /*
     |--------------------------------------------------------------------------

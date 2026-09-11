@@ -30,6 +30,18 @@ final readonly class LeadData
         /** @var array<int> */
         public array $contactIds,
         public ?string $lossReason,
+        // Fase 3 — campos da jornada consulta → contrato
+        public ?CarbonImmutable $proximaConsulta = null,
+        public ?string $comparecimento = null,
+        public ?string $statusSinal = null,
+        public ?float $valorProposta = null,
+        public ?string $valorTotal = null,
+        public ?string $dataAssinatura = null,
+        public ?string $dataCirurgia = null,
+        public ?string $cirurgia = null,
+        public ?string $medicoResponsavel = null,
+        /** @var array<int, string> */
+        public array $tags = [],
     ) {}
 
     /**
@@ -47,6 +59,8 @@ final readonly class LeadData
         };
 
         $score = $value('score');
+        $proximaConsulta = $value('proxima_consulta');
+        $valorProposta = $value('valor_proposta');
 
         $contactIds = array_map(
             fn (array $c): int => (int) $c['id'],
@@ -73,6 +87,20 @@ final readonly class LeadData
             instagram: $value('instagram'),
             contactIds: $contactIds,
             lossReason: $lossReason,
+            // Campo data/hora do Kommo chega como timestamp Unix
+            proximaConsulta: is_numeric($proximaConsulta) ? CarbonImmutable::createFromTimestampUTC((int) $proximaConsulta) : null,
+            comparecimento: $value('comparecimento'),
+            statusSinal: $value('status_sinal'),
+            valorProposta: is_numeric($valorProposta) ? (float) $valorProposta : null,
+            valorTotal: $value('valor_total'),
+            dataAssinatura: $value('data_assinatura'),
+            dataCirurgia: $value('data_cirurgia'),
+            cirurgia: $value('cirurgia'),
+            medicoResponsavel: $value('medico_responsavel'),
+            tags: array_map(
+                fn (array $t): string => (string) $t['name'],
+                $raw['_embedded']['tags'] ?? [],
+            ),
         );
     }
 

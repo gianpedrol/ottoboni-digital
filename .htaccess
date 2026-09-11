@@ -1,0 +1,20 @@
+# Para hospedagem em que a raiz do domínio aponta para a pasta do projeto
+# (e não para public/). Tudo é servido de dentro de public/: nada fora dela
+# (.env, database/, storage/, vendor/) fica acessível pelo navegador, e as
+# rotas (inclusive /livewire/update) funcionam sem "/public" no endereço.
+#
+# O certo é apontar a raiz do documento do domínio para public/; este
+# arquivo é a proteção enquanto isso não é feito.
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Endereços antigos com /public continuam funcionando
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+# Se o mod_rewrite não existir, ao menos nega o acesso direto
+<IfModule !mod_rewrite.c>
+    Require all denied
+</IfModule>

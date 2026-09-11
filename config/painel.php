@@ -14,6 +14,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Modo protótipo (Fase 3)
+    |--------------------------------------------------------------------------
+    | Liga a faixa "Protótipo" no topo do painel. Nesse modo nenhuma tela
+    | nova grava no Kommo: criar paciente, agenda e automações só simulam e
+    | mostram o que seria enviado.
+    */
+
+    'prototipo' => (bool) env('PAINEL_PROTOTIPO', true),
+
+    /*
+    |--------------------------------------------------------------------------
     | Webhook do n8n (Fase 2 — FOLLOWUP EXECUTOR)
     |--------------------------------------------------------------------------
     */
