@@ -1,0 +1,88 @@
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+
+@source '../../../../app/Filament/**/*';
+@source '../../../../resources/views/filament/**/*';
+
+/*
+ * Marca Ottoboni: branco, bege quente e coral, muito respiro e títulos leves
+ * (como o site da clínica). O painel roda só no modo claro.
+ */
+
+.fi-body {
+    background-color: oklch(0.985 0.005 70);
+}
+
+.fi-topbar > nav,
+.fi-sidebar {
+    background-color: var(--color-white);
+}
+
+.fi-topbar > nav {
+    box-shadow: none;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.fi-sidebar {
+    border-inline-end: 1px solid var(--gray-200);
+}
+
+.fi-logo {
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    color: var(--primary-700);
+}
+
+.fi-sidebar-group-label {
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--gray-400);
+}
+
+/* Cartões: branco, borda fina, sem sombra pesada */
+.fi-section,
+.fi-wi-stats-overview-stat,
+.fi-ta-ctn {
+    border-radius: 1rem;
+    box-shadow: 0 1px 2px 0 rgb(68 50 40 / 0.04);
+}
+
+.fi-header-heading {
+    font-weight: 500;
+    letter-spacing: -0.015em;
+}
+
+.fi-wi-stats-overview-stat-label {
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--gray-500);
+}
+
+.fi-wi-stats-overview-stat-value {
+    font-weight: 500;
+    letter-spacing: -0.02em;
+}
+
+.fi-section-header-heading {
+    font-weight: 500;
+}
+
+/*
+ * Botão principal como no site: coral com texto branco. O Filament escolheria
+ * o coral claro com texto escuro; o 600 com branco dá ~4,9:1 (AA).
+ */
+/* Só <button> e <a>: os ToggleButtons são <label> e têm estado próprio */
+:is(button, a).fi-btn.fi-color-primary:not(.fi-outlined) {
+    background-color: var(--primary-600);
+    color: var(--color-white);
+}
+
+:is(button, a).fi-btn.fi-color-primary:not(.fi-outlined):hover {
+    background-color: var(--primary-700);
+}
+
+:is(button, a).fi-btn.fi-color-primary:not(.fi-outlined) .fi-icon {
+    color: var(--color-white);
+}

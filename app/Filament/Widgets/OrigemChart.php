@@ -17,6 +17,8 @@ class OrigemChart extends ChartWidget
 
     protected ?string $heading = 'Origem dos leads';
 
+    protected ?string $maxHeight = '260px';
+
     protected function getData(): array
     {
         /** @var User $user */
