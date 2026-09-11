@@ -22,7 +22,7 @@ class AgenteSelecionado
             ->orderBy('id')
             ->get()
             ->mapWithKeys(fn (Doctor $d): array => [
-                $d->id => ucfirst($d->agente) . ' — ' . $d->nome,
+                $d->id => ucfirst($d->agente).' — '.$d->nome,
             ])
             ->all();
     }

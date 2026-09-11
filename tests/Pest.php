@@ -4,6 +4,9 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 pest()->extend(Tests\TestCase::class)
     ->use(RefreshDatabase::class)
+    // Sem isto, todo teste que renderiza tela exige `npm run build` antes —
+    // em clone limpo ou CI a suíte quebra com "Vite manifest not found".
+    ->beforeEach(fn () => $this->withoutVite())
     ->in('Feature');
 
 /*

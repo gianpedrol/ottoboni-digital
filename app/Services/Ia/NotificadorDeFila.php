@@ -4,6 +4,7 @@ namespace App\Services\Ia;
 
 use App\Enums\DoctorScope;
 use App\Enums\UserRole;
+use App\Models\Doctor;
 use App\Models\IaApproval;
 use App\Models\IaGateSetting;
 use App\Models\IaPushDevice;
@@ -99,7 +100,7 @@ class NotificadorDeFila
      */
     private function destinatarios(int $doctorId): array
     {
-        $agente = \App\Models\Doctor::query()->whereKey($doctorId)->value('agente');
+        $agente = Doctor::query()->whereKey($doctorId)->value('agente');
 
         $escopo = match ($agente) {
             'duda' => DoctorScope::Eduardo,
@@ -174,8 +175,8 @@ class NotificadorDeFila
 
         try {
             Mail::raw(
-                $corpo . "\n\n" . url('/ia/fila-de-aprovacao'),
-                fn ($m) => $m->to($emails)->subject('[Painel Ottoboni] ' . $titulo)
+                $corpo."\n\n".url('/ia/fila-de-aprovacao'),
+                fn ($m) => $m->to($emails)->subject('[Painel Ottoboni] '.$titulo)
             );
         } catch (\Throwable $e) {
             Log::warning('Falha no e-mail da fila de IA', ['erro' => $e->getMessage()]);

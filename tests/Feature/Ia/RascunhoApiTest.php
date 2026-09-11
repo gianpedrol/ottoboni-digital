@@ -4,8 +4,10 @@ use App\Enums\IaApprovalStatus;
 use App\Enums\IaGateModo;
 use App\Enums\IaIntent;
 use App\Models\IaApproval;
+use App\Models\IaCard;
 use App\Models\IaGateSetting;
 use App\Models\WebhookLog;
+use Database\Seeders\IaGuardrailSeeder;
 
 beforeEach(function () {
     config()->set('painel.ia.webhook_secret', 'segredo-teste');
@@ -100,10 +102,10 @@ it('devolve agente desconhecido com 404', function () {
 });
 
 it('entrega o contexto com prompt, regras e cards', function () {
-    \Database\Seeders\IaGuardrailSeeder::class;
-    (new \Database\Seeders\IaGuardrailSeeder)->run();
+    IaGuardrailSeeder::class;
+    (new IaGuardrailSeeder)->run();
 
-    \App\Models\IaCard::query()->create([
+    IaCard::query()->create([
         'doctor_id' => $this->luna->id,
         'pergunta' => 'qual o valor da consulta?',
         'resposta' => 'R$ 900,00',

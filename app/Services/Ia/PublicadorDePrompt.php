@@ -78,7 +78,7 @@ class PublicadorDePrompt
                 'versao' => $proxima,
                 'versao_anterior' => $anterior?->versao,
                 'motivo' => $motivo,
-                'blocos_alterados' => $this->blocosAlterados($anterior?->blocos ?? [], $blocos),
+                'blocos_alterados' => $this->blocosAlterados($anterior->blocos ?? [], $blocos),
             ], $autor->id);
 
             return $versao;

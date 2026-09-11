@@ -20,7 +20,7 @@ class VerificaAssinaturaIa
         $recebida = (string) $request->header('X-Signature', '');
         $secret = (string) config('painel.ia.webhook_secret');
 
-        $esperada = 'sha256=' . hash_hmac('sha256', $corpo, $secret);
+        $esperada = 'sha256='.hash_hmac('sha256', $corpo, $secret);
         $valida = $secret !== '' && hash_equals($esperada, $recebida);
 
         if (! $valida) {

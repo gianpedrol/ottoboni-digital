@@ -57,8 +57,8 @@ class AprovadorDeResposta
         }
 
         $medida = $this->medidor->medir(
-            trim((string) $item->rascunho_comentario . ' ' . (string) $item->rascunho_dm),
-            trim((string) $finalComentario . ' ' . (string) $finalDm),
+            trim((string) $item->rascunho_comentario.' '.(string) $item->rascunho_dm),
+            trim((string) $finalComentario.' '.(string) $finalDm),
         );
 
         DB::transaction(function () use ($item, $finalComentario, $finalDm, $autor, $observacao, $medida, $virarExemplo): void {

@@ -48,7 +48,6 @@ class IaApprovalResource extends Resource
         return IaApprovalsTable::configure($table);
     }
 
-    /** @return Builder<IaApproval> */
     public static function getEloquentQuery(): Builder
     {
         /** @var User $user */

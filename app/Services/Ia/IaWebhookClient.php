@@ -38,7 +38,7 @@ class IaWebhookClient
         }
 
         $body = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        $assinatura = 'sha256=' . hash_hmac('sha256', (string) $body, (string) $secret);
+        $assinatura = 'sha256='.hash_hmac('sha256', (string) $body, (string) $secret);
 
         try {
             $response = Http::withHeaders([

@@ -43,7 +43,6 @@ class IaTriggerResource extends Resource
         return IaTriggersTable::configure($table);
     }
 
-    /** @return Builder<IaTrigger> */
     public static function getEloquentQuery(): Builder
     {
         /** @var User $user */

@@ -41,7 +41,7 @@ class IaExamplesTable
                     ->sortable(),
                 TextColumn::make('approval_id')
                     ->label('Origem')
-                    ->formatStateUsing(fn (?int $state): string => $state ? 'Revisão #' . $state : 'Manual')
+                    ->formatStateUsing(fn (?int $state): string => $state ? 'Revisão #'.$state : 'Manual')
                     ->toggleable(),
                 IconColumn::make('ativo')
                     ->label('Ativo')

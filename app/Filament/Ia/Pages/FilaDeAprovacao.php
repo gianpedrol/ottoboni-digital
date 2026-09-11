@@ -63,14 +63,14 @@ class FilaDeAprovacao extends Page
 
     public static function getNavigationBadge(): ?string
     {
-        $total = static::baseQuery()->pendentes()->count();
+        $total = self::baseQuery()->pendentes()->count();
 
         return $total > 0 ? (string) $total : null;
     }
 
     public static function getNavigationBadgeColor(): ?string
     {
-        $naoSei = static::baseQuery()
+        $naoSei = self::baseQuery()
             ->pendentes()
             ->where('intent', IaIntent::NaoSei)
             ->exists();
@@ -106,7 +106,7 @@ class FilaDeAprovacao extends Page
             ? (clone $query)->whereKey($forcarId)->first()
             : $query
                 ->whereNotIn('id', $this->pulados)
-                ->orderByRaw("CASE WHEN intent = ? THEN 0 ELSE 1 END", [IaIntent::NaoSei->value])
+                ->orderByRaw('CASE WHEN intent = ? THEN 0 ELSE 1 END', [IaIntent::NaoSei->value])
                 ->orderByRaw('CASE WHEN expira_em IS NOT NULL AND expira_em < ? THEN 0 ELSE 1 END', [now()])
                 ->orderBy('created_at')
                 ->first();
@@ -210,7 +210,7 @@ class FilaDeAprovacao extends Page
     public function fila(): Collection
     {
         return $this->filaQuery()
-            ->orderByRaw("CASE WHEN intent = ? THEN 0 ELSE 1 END", [IaIntent::NaoSei->value])
+            ->orderByRaw('CASE WHEN intent = ? THEN 0 ELSE 1 END', [IaIntent::NaoSei->value])
             ->orderBy('created_at')
             ->limit(50)
             ->get();
@@ -232,7 +232,7 @@ class FilaDeAprovacao extends Page
         ];
     }
 
-    /** @return array<string, string> */
+    /** @return array<int, string> */
     public function agentes(): array
     {
         return AgenteSelecionado::options($this->usuario());

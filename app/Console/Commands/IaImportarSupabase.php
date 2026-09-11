@@ -138,7 +138,7 @@ class IaImportarSupabase extends Command
             ]);
         }
 
-        $this->info("Cards: {$novos} novo(s), {$existentes} já existiam (de " . count($linhas) . ' no Supabase).');
+        $this->info("Cards: {$novos} novo(s), {$existentes} já existiam (de ".count($linhas).' no Supabase).');
     }
 
     private function importarGatilhos(Doctor $doctor, string $url, string $key, string $tabela, bool $seco): void
@@ -179,7 +179,7 @@ class IaImportarSupabase extends Command
             ]);
         }
 
-        $this->info("Gatilhos: {$novos} novo(s) (de " . count($linhas) . ' no Supabase).');
+        $this->info("Gatilhos: {$novos} novo(s) (de ".count($linhas).' no Supabase).');
     }
 
     /**

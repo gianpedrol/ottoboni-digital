@@ -10,6 +10,7 @@ use App\Enums\IaMotivoFila;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * Um item da fila de aprovação: o que a agente quer responder e ainda
@@ -20,6 +21,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property IaCanal $canal
  * @property IaMotivoFila $motivo_fila
  * @property ?IaGrauEdicao $grau_edicao
+ * @property ?Carbon $expira_em
+ * @property ?Carbon $revisado_em
+ * @property ?Carbon $enviado_em
+ * @property ?Carbon $comentario_em
+ * @property ?Doctor $doctor
  */
 class IaApproval extends Model
 {
@@ -58,16 +64,19 @@ class IaApproval extends Model
         ];
     }
 
+    /** @return BelongsTo<Doctor, $this> */
     public function doctor(): BelongsTo
     {
         return $this->belongsTo(Doctor::class);
     }
 
+    /** @return BelongsTo<User, $this> */
     public function revisor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'revisado_por');
     }
 
+    /** @return BelongsTo<IaPromptVersion, $this> */
     public function promptVersion(): BelongsTo
     {
         return $this->belongsTo(IaPromptVersion::class, 'prompt_version_id');
@@ -84,7 +93,7 @@ class IaApproval extends Model
      * "auto_enviado" fica fora — ninguém olhou, não pode inflar a nota.
      * "nao_sei" fica fora — por definição a agente não sabia.
      *
-     * @param Builder<IaApproval> $query
+     * @param  Builder<IaApproval>  $query
      */
     public function scopeAvaliaveis(Builder $query): void
     {

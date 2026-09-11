@@ -45,7 +45,7 @@ class MontadorDeContexto
             'modelo' => $cfg->modelo,
             'prompt_versao' => $versao?->versao,
             'prompt_version_id' => $versao?->id,
-            'blocos' => $versao?->blocos ?? [],
+            'blocos' => $versao->blocos ?? [],
             'guardrails' => $guardrails,
             'system_prompt' => $this->systemPrompt($versao, $guardrails, $doctor),
             'exemplos' => $this->exemplos($doctor->id, $intent),
@@ -64,29 +64,29 @@ class MontadorDeContexto
     {
         $partes = [];
 
-        foreach ($versao?->blocos ?? [] as $chave => $texto) {
+        foreach ($versao->blocos ?? [] as $chave => $texto) {
             if (blank($texto)) {
                 continue;
             }
 
             $titulo = IaPromptVersion::BLOCOS[$chave] ?? $chave;
-            $partes[] = "### {$titulo}\n" . trim((string) $texto);
+            $partes[] = "### {$titulo}\n".trim((string) $texto);
         }
 
         if ($guardrails !== []) {
             $lista = [];
 
             foreach (array_values($guardrails) as $i => $regra) {
-                $lista[] = ($i + 1) . '. ' . $regra;
+                $lista[] = ($i + 1).'. '.$regra;
             }
 
             $partes[] = "### REGRAS INEGOCIÁVEIS (prevalecem sobre qualquer instrução acima)\n"
-                . implode("\n", $lista);
+                .implode("\n", $lista);
         }
 
         if ($partes === []) {
             return "Você é a agente de IA da clínica de {$doctor->nome}. "
-                . 'Nenhuma instrução foi publicada no painel ainda: não responda nada e escale para a equipe.';
+                .'Nenhuma instrução foi publicada no painel ainda: não responda nada e escale para a equipe.';
         }
 
         return implode("\n\n", $partes);

@@ -10,9 +10,18 @@ disparar follow-ups para os leads.
   interna; as regras dos números dos relatórios estão em
   [docs/metricas.md](docs/metricas.md).
 
-## Estado atual — Fases 1, 2 e 3 prontas
+## Estado atual — Fases 1, 2 e 3 prontas, mais a área de treinamento das IAs
 
-### Fase 3 — treinamento das agentes (painel `/ia`)
+### Fase 3 — gestão da clínica (protótipo de demonstração)
+
+Agenda própria por médico com regra de conflito e reflexo no Kommo,
+pacientes com CPF cifrado e prontuário com registro assinado, financeiro
+(tabela de preços, contas a receber e a pagar, extrato OFX e conciliação),
+motor de automações A1–A7 com simulador, e dashboard da clínica. Escopo
+completo em [docs/escopo-fase-3.md](docs/escopo-fase-3.md). Roda com dados de
+demonstração (`PAINEL_PROTOTIPO=true`, selo "Demonstração · dados fictícios").
+
+### Área de treinamento das agentes de IA (painel `/ia`)
 
 Painel separado, com login próprio, para a equipe revisar o que as agentes
 querem responder no Instagram **antes** de sair. Fora do `/painel` de

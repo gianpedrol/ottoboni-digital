@@ -43,7 +43,6 @@ class IaExampleResource extends Resource
         return IaExamplesTable::configure($table);
     }
 
-    /** @return Builder<IaExample> */
     public static function getEloquentQuery(): Builder
     {
         /** @var User $user */

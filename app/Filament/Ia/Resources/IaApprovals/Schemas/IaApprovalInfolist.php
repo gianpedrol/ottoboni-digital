@@ -25,7 +25,7 @@ class IaApprovalInfolist
                     TextEntry::make('motivo_fila')->label('Por que foi para a fila')->badge(),
                     TextEntry::make('ig_username')
                         ->label('Paciente')
-                        ->formatStateUsing(fn (?string $state): string => $state ? '@' . $state : '—'),
+                        ->formatStateUsing(fn (?string $state): string => $state ? '@'.$state : '—'),
                     TextEntry::make('texto_da_pessoa')
                         ->label('O que escreveram')
                         ->state(fn (IaApproval $r): string => $r->textoDaPessoa() ?: '—')
@@ -63,7 +63,7 @@ class IaApprovalInfolist
                     TextEntry::make('modelo')->label('Modelo'),
                     TextEntry::make('promptVersion.versao')
                         ->label('Instruções')
-                        ->formatStateUsing(fn (?int $state): string => $state ? 'v' . $state : '—'),
+                        ->formatStateUsing(fn (?int $state): string => $state ? 'v'.$state : '—'),
                     TextEntry::make('erro')->label('Erro no envio')->placeholder('—')->columnSpanFull(),
                 ])
                 ->columns(3),

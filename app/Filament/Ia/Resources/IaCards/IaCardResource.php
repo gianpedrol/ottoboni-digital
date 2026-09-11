@@ -43,7 +43,6 @@ class IaCardResource extends Resource
         return IaCardsTable::configure($table);
     }
 
-    /** @return Builder<IaCard> */
     public static function getEloquentQuery(): Builder
     {
         /** @var User $user */

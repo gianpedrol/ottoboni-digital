@@ -104,7 +104,7 @@ class Acuracia extends Page
         return $this->config()->modo;
     }
 
-    /** @return array<string, string> */
+    /** @return array<int, string> */
     public function agentes(): array
     {
         return AgenteSelecionado::options($this->usuario());

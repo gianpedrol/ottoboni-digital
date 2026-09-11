@@ -70,7 +70,7 @@ class PromptsERegras extends Page
 
         foreach (IaPromptVersion::BLOCOS as $chave => $rotulo) {
             $campos[] = Textarea::make("blocos.{$chave}")
-                ->label($rotulo . "  ({$chave})")
+                ->label($rotulo."  ({$chave})")
                 ->rows($chave === 'HANDOFF_MSG' ? 3 : 8)
                 ->columnSpanFull()
                 ->autosize();
@@ -181,7 +181,7 @@ class PromptsERegras extends Page
             ->first();
     }
 
-    /** @return array<string, string> */
+    /** @return array<int, string> */
     public function agentes(): array
     {
         return AgenteSelecionado::options($this->usuario());

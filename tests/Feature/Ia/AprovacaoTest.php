@@ -101,12 +101,22 @@ it('transforma em card na base a resposta de um "não sei"', function () {
     expect(IaExample::query()->firstOrFail()->prioridade)->toBe(10);
 });
 
-it('recusa aprovar com os dois campos vazios', function () {
-    $item = itemPendente($this->luna);
+it('recusa aprovar um "não sei" com os dois campos em branco', function () {
+    // Sem rascunho da agente e sem texto do humano não há o que enviar.
+    // O caminho certo para "a resposta é o silêncio" é rejeitar, não aprovar vazio.
+    $item = itemPendente($this->luna, [
+        'intent' => IaIntent::NaoSei,
+        'motivo_fila' => IaMotivoFila::NaoSei,
+        'rascunho_comentario' => null,
+        'rascunho_dm' => null,
+    ]);
 
     expect(fn () => $this->aprovador->aprovar($item, '', '', $this->revisor, aceite: true))
-        ->toThrow(RuntimeException::class);
-})->skip('rascunho preenchido é usado como fallback — coberto pelo caso de campo em branco');
+        ->toThrow(RuntimeException::class, 'Não há texto para enviar');
+
+    expect($item->refresh()->status)->toBe(IaApprovalStatus::Pendente);
+    Queue::assertNothingPushed();
+});
 
 it('usa o rascunho quando o campo fica em branco', function () {
     $item = itemPendente($this->luna);

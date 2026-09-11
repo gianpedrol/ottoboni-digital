@@ -38,7 +38,7 @@ class IaVigiaFila extends Command
                 ->get(['intent', 'expira_em', 'notificado_em']);
 
             if ($itens->isEmpty()) {
-                $this->line("{$agente->agente}: fila vazia" . ($expirados > 0 ? " ({$expirados} expirados)" : ''));
+                $this->line("{$agente->agente}: fila vazia".($expirados > 0 ? " ({$expirados} expirados)" : ''));
 
                 continue;
             }
@@ -71,7 +71,7 @@ class IaVigiaFila extends Command
                 ->update(['notificado_em' => now()]);
 
             $this->info("{$agente->agente}: avisado — {$resumo['pendentes']} pendente(s), "
-                . "{$resumo['nao_sei']} sem resposta na base, {$resumo['atrasados']} atrasado(s)");
+                ."{$resumo['nao_sei']} sem resposta na base, {$resumo['atrasados']} atrasado(s)");
         }
 
         return self::SUCCESS;
@@ -92,7 +92,7 @@ class IaVigiaFila extends Command
             ->update([
                 'status' => IaApprovalStatus::Expirado,
                 'observacao_humano' => 'Expirado automaticamente após 24h sem revisão'
-                    . " (prazo configurado: {$limite->timeout_min} min).",
+                    ." (prazo configurado: {$limite->timeout_min} min).",
             ]);
     }
 }

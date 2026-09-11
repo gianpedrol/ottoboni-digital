@@ -2,8 +2,8 @@
 
 namespace App\Filament\Ia\Resources\IaCards\Schemas;
 
-use App\Support\AgenteSelecionado;
 use App\Models\User;
+use App\Support\AgenteSelecionado;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
