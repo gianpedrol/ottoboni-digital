@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Doctors;
 
+use App\Filament\Concerns\TituloEmPortugues;
 use App\Filament\Resources\Doctors\Pages\EditDoctor;
 use App\Filament\Resources\Doctors\Pages\ListDoctors;
 use App\Filament\Resources\Doctors\Schemas\DoctorForm;
@@ -18,6 +19,8 @@ use UnitEnum;
 
 class DoctorResource extends Resource
 {
+    use TituloEmPortugues;
+
     protected static ?string $model = Doctor::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUserCircle;
